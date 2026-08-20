@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  catalogo-app:
+    # Se você for usar a imagem do Docker Hub, descomente a linha abaixo e substitua 'seu_usuario' pelo seu login
+    # image: seu_usuario/catalogo-tom-hanks:latest
+    
+    # Se o Portainer for buildar direto do GitHub, usamos a linha abaixo:
+    build: .
+    
+    container_name: catalogo_tom_hanks
+    restart: always
+    ports:
+      # O professor reservou uma porta pra você. O lado esquerdo é a sua porta pública, o direito é a 3000 do app.
+      # Exemplo: se sua porta for 8080, mude para "8080:3000"
+      - "SUA_PORTA_RESERVADA:3000"
+    environment:
+      # As variáveis serão injetadas pelo Portainer no momento do Deploy
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - SESSION_SECRET=${SESSION_SECRET}

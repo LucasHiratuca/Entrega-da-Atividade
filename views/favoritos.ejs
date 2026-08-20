@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Favoritos — Catálogo Tom Hanks</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="/filmes" class="navbar-brand">🎬 Catálogo Tom Hanks</a>
+    <div class="navbar-links">
+      <a href="/filmes">Filmes</a>
+      <a href="/favoritos">⭐ Favoritos</a>
+      <span class="navbar-user">Olá, <%= userName %></span>
+      <a href="/logout">Sair</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1 class="page-title">⭐ Meus Favoritos</h1>
+
+    <% if (favoritos.length === 0) { %>
+      <div class="empty-state">
+        <p>Você ainda não favoritou nenhum filme.</p>
+        <a href="/filmes" class="btn btn-primary" style="width:auto; display:inline-block;">Explorar filmes</a>
+      </div>
+    <% } else { %>
+      <div class="movies-grid">
+        <% favoritos.forEach(function(fav) { %>
+          <a href="/filme/<%= fav.tmdb_movie_id %>" class="movie-card">
+            <% if (fav.poster_path) { %>
+              <img
+                src="https://image.tmdb.org/t/p/w500<%= fav.poster_path %>"
+                alt="<%= fav.titulo %>"
+                loading="lazy"
+              >
+            <% } %>
+            <div class="movie-card-body">
+              <div class="movie-card-title"><%= fav.titulo %></div>
+              <div class="fav-badge">⭐ Favoritado</div>
+            </div>
+          </a>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</body>
+</html>

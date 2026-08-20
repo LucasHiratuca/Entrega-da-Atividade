@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Filmes — Tom Hanks</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="/filmes" class="navbar-brand">🎬 Catálogo Tom Hanks</a>
+    <div class="navbar-links">
+      <a href="/filmes">Filmes</a>
+      <a href="/favoritos">⭐ Favoritos</a>
+      <span class="navbar-user">Olá, <%= userName %></span>
+      <a href="/logout">Sair</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <h1 class="page-title">Filmes com Tom Hanks</h1>
+
+    <% if (filmes.length === 0) { %>
+      <div class="empty-state">
+        <p>Nenhum filme encontrado.</p>
+      </div>
+    <% } else { %>
+      <div class="movies-grid">
+        <% filmes.forEach(function(filme) { %>
+          <a href="/filme/<%= filme.id %>" class="movie-card">
+            <img
+              src="https://image.tmdb.org/t/p/w500<%= filme.poster_path %>"
+              alt="<%= filme.title %>"
+              loading="lazy"
+            >
+            <div class="movie-card-body">
+              <div class="movie-card-title"><%= filme.title %></div>
+              <% if (filme.release_date) { %>
+                <div class="movie-card-year"><%= filme.release_date.substring(0, 4) %></div>
+              <% } %>
+              <% if (favoritosIds.includes(filme.id)) { %>
+                <div class="fav-badge">⭐ Favoritado</div>
+              <% } %>
+            </div>
+          </a>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</body>
+</html>
