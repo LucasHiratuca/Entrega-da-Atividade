@@ -2,7 +2,7 @@
 
 Aplicação web que consome a API do [TMDB](https://www.themoviedb.org/) para listar filmes com Tom Hanks e permite que cada usuário cadastrado favorite e comente filmes de forma isolada.
 
-Desenvolvido para a disciplina **ISW055** — Professor **@siriani**.
+Desenvolvido para a disciplina **ISW055** — Professor [**@siriani**](https://github.com/siriani).
 
 ## 🚀 Funcionalidades
 
