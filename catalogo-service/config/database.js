@@ -14,16 +14,7 @@ const pool = mysql.createPool({
 async function initDatabase() {
   const conn = await pool.getConnection();
   try {
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS usuarios (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        nome VARCHAR(100) NOT NULL,
-        email VARCHAR(150) UNIQUE NOT NULL,
-        senha_hash VARCHAR(255) NOT NULL,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    `);
-
+    // O catálogo só gerencia favoritos e comentários — usuários são responsabilidade do auth-service
     await conn.query(`
       CREATE TABLE IF NOT EXISTS favoritos (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -32,7 +23,6 @@ async function initDatabase() {
         titulo VARCHAR(255) NOT NULL,
         poster_path VARCHAR(255),
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
         UNIQUE (usuario_id, tmdb_movie_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
@@ -43,12 +33,11 @@ async function initDatabase() {
         usuario_id INT NOT NULL,
         tmdb_movie_id INT NOT NULL,
         texto TEXT NOT NULL,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
-    console.log('Tabelas do banco de dados criadas/verificadas com sucesso.');
+    console.log('[Catálogo] Tabelas de favoritos/comentários criadas/verificadas.');
   } finally {
     conn.release();
   }
