@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Esqueci a Senha | Catálogo Tom Hanks</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-box">
+      <a href="/" class="brand" style="justify-content: center; margin-bottom: 2rem;">🎬 Tom Hanks</a>
+      <h2>Recuperar Senha</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem;">
+        Digite seu e-mail e enviaremos um link de recuperação válido por 30 minutos.
+      </p>
+      
+      <% if (error && error.length > 0) { %>
+        <div class="alert alert-error"><%= error %></div>
+      <% } %>
+      <% if (success && success.length > 0) { %>
+        <div class="alert alert-success"><%= success %></div>
+      <% } %>
+
+      <form action="/esqueci-senha" method="POST">
+        <div class="form-group">
+          <label for="email">E-mail cadastrado</label>
+          <input type="email" name="email" id="email" required placeholder="seu@email.com">
+        </div>
+        <button type="submit" class="btn btn-primary">Enviar link de recuperação</button>
+      </form>
+      
+      <div class="links">
+        <a href="/login">Voltar para o login</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

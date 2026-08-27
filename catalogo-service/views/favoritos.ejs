@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Meus Favoritos | Catálogo Tom Hanks</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="/filmes" class="brand">🎬 Tom Hanks Collection</a>
+    <div class="nav-links">
+      <a href="/filmes">Catálogo</a>
+      <a href="/favoritos" style="color: var(--primary);">Meus Favoritos</a>
+      <a href="/logout" style="color: var(--accent);">Sair</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h2>Meus Filmes Favoritos</h2>
+    </div>
+
+    <div class="movies-grid">
+      <% if (favoritos.length > 0) { %>
+        <% favoritos.forEach(function(f) { %>
+          <a href="/filme/<%= f.tmdb_movie_id %>" class="movie-card">
+            <img class="movie-poster" src="https://image.tmdb.org/t/p/w500<%= f.poster_path %>" alt="<%= f.titulo %>">
+            <div class="fav-icon">⭐</div>
+            <div class="movie-info">
+              <div class="movie-title"><%= f.titulo %></div>
+              <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: auto;">
+                Salvo em: <%= new Date(f.criado_em).toLocaleDateString('pt-BR') %>
+              </div>
+            </div>
+          </a>
+        <% }); %>
+      <% } else { %>
+        <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 0;">
+          <p style="color: var(--text-muted); font-size: 1.2rem; margin-bottom: 1rem;">Você ainda não tem favoritos.</p>
+          <a href="/filmes" class="btn btn-primary" style="width: auto; padding: 0.8rem 2rem;">Explorar o Catálogo</a>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Redefinir Senha | Catálogo Tom Hanks</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-box">
+      <a href="/" class="brand" style="justify-content: center; margin-bottom: 2rem;">🎬 Tom Hanks</a>
+      
+      <% if (error && error.length > 0) { %>
+        <div class="alert alert-error"><%= error %></div>
+        <div class="links"><a href="/esqueci-senha">Solicitar novo link</a></div>
+      <% } else if (token) { %>
+        <h2>Nova Senha</h2>
+        <form action="/redefinir-senha/<%= token %>" method="POST">
+          <div class="form-group">
+            <label for="novaSenha">Nova senha</label>
+            <input type="password" name="novaSenha" id="novaSenha" required placeholder="Mínimo 6 caracteres">
+          </div>
+          <div class="form-group">
+            <label for="confirmarNovaSenha">Confirmar nova senha</label>
+            <input type="password" name="confirmarNovaSenha" id="confirmarNovaSenha" required placeholder="Repita a senha">
+          </div>
+          <button type="submit" class="btn btn-primary">Salvar Nova Senha</button>
+        </form>
+      <% } %>
+      
+    </div>
+  </div>
+</body>
+</html>

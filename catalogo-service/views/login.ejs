@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Login | Catálogo Tom Hanks</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-box">
+      <a href="/" class="brand" style="justify-content: center; margin-bottom: 2rem;">🎬 Tom Hanks</a>
+      <h2>Acesse sua conta</h2>
+      
+      <% if (error && error.length > 0) { %>
+        <div class="alert alert-error"><%= error %></div>
+      <% } %>
+      <% if (success && success.length > 0) { %>
+        <div class="alert alert-success"><%= success %></div>
+      <% } %>
+
+      <form action="/login" method="POST">
+        <div class="form-group">
+          <label for="email">E-mail</label>
+          <input type="email" name="email" id="email" required placeholder="seu@email.com">
+        </div>
+        <div class="form-group">
+          <label for="senha">Senha</label>
+          <input type="password" name="senha" id="senha" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary">Entrar</button>
+      </form>
+      
+      <div class="links">
+        <a href="/esqueci-senha">Esqueci minha senha</a>
+        <a href="/cadastro">Não tem uma conta? Cadastre-se</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

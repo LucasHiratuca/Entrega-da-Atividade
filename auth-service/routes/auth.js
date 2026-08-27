@@ -81,12 +81,13 @@ router.post('/login', async (req, res) => {
       message: 'Login realizado com sucesso!',
       token,
       user: {
-        id: usuario.id,
+        userId: usuario.id,
         nome: usuario.nome,
         email: usuario.email,
         role: usuario.role,
       },
     });
+
   } catch (err) {
     console.error('[Auth] Erro no login:', err);
     return res.status(500).json({ error: 'Erro interno no servidor.' });
