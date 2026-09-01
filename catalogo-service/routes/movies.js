@@ -77,9 +77,14 @@ router.get('/filme/:id', requireLogin, async (req, res) => {
     );
     const isFavorito = favRows.length > 0;
 
+    // Busca TODOS os comentários do filme (de todos os usuários) com o nome do autor
     const [comentarios] = await pool.query(
-      'SELECT id, texto, criado_em FROM comentarios WHERE usuario_id = ? AND tmdb_movie_id = ? ORDER BY criado_em DESC',
-      [req.userId, tmdbId]
+      `SELECT c.id, c.usuario_id, c.texto, c.criado_em, u.nome AS autor_nome
+       FROM comentarios c
+       LEFT JOIN usuarios u ON c.usuario_id = u.id
+       WHERE c.tmdb_movie_id = ?
+       ORDER BY c.criado_em DESC`,
+      [tmdbId]
     );
 
     res.render('filme', {
@@ -87,6 +92,8 @@ router.get('/filme/:id', requireLogin, async (req, res) => {
       isFavorito,
       comentarios,
       user: req.session.user,
+      userId: req.userId,
+      userRole: req.userRole,
       error: req.flash('error'),
       success: req.flash('success'),
     });

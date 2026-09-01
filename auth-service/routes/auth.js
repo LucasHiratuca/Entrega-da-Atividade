@@ -139,4 +139,72 @@ router.get('/user/:id', async (req, res) => {
   }
 });
 
+// ============================================================
+// ENDPOINTS ADMINISTRATIVOS (requerem JWT com role === 'admin')
+// ============================================================
+
+// Middleware interno: verifica JWT e exige role admin
+function requireAdminJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token não fornecido.' });
+  }
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role !== 'admin') {
+      return res.status(403).json({ error: 'Acesso negado. Permissão de administrador necessária.' });
+    }
+    req.adminUser = decoded;
+    return next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Token inválido ou expirado.' });
+  }
+}
+
+// GET /users — Lista todos os usuários (somente admin)
+router.get('/users', requireAdminJWT, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, nome, email, role, criado_em FROM usuarios ORDER BY criado_em DESC'
+    );
+    return res.json(rows);
+  } catch (err) {
+    console.error('[Auth] Erro ao listar usuários:', err);
+    return res.status(500).json({ error: 'Erro interno.' });
+  }
+});
+
+// PUT /users/:id/role — Altera o papel de um usuário (somente admin)
+router.put('/users/:id/role', requireAdminJWT, async (req, res) => {
+  const targetId = parseInt(req.params.id);
+  const { role } = req.body;
+
+  if (!role || !['usuario', 'admin'].includes(role)) {
+    return res.status(400).json({ error: 'Papel inválido. Use "usuario" ou "admin".' });
+  }
+
+  // Impede que um admin rebaixe a si mesmo
+  if (targetId === req.adminUser.userId) {
+    return res.status(400).json({ error: 'Você não pode alterar seu próprio papel.' });
+  }
+
+  try {
+    const [result] = await pool.query(
+      'UPDATE usuarios SET role = ? WHERE id = ?',
+      [role, targetId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    console.log(`[Auth] Papel do usuario_id=${targetId} alterado para "${role}" por admin_id=${req.adminUser.userId}`);
+    return res.json({ message: `Papel alterado para "${role}" com sucesso.` });
+  } catch (err) {
+    console.error('[Auth] Erro ao alterar papel:', err);
+    return res.status(500).json({ error: 'Erro interno.' });
+  }
+});
+
 module.exports = router;

@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth');
 const movieRoutes = require('./routes/movies');
 const favoriteRoutes = require('./routes/favorites');
 const commentRoutes = require('./routes/comments');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -43,6 +44,7 @@ app.use('/', authRoutes);
 app.use('/', movieRoutes);
 app.use('/', favoriteRoutes);
 app.use('/', commentRoutes);
+app.use('/', adminRoutes);
 
 // Rota raiz
 app.get('/', (req, res) => {

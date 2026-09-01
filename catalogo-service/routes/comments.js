@@ -23,14 +23,41 @@ router.post('/comentario/adicionar', requireLogin, async (req, res) => {
   return res.redirect(`/filme/${tmdb_movie_id}`);
 });
 
-// POST /comentario/remover
+// POST /comentario/remover — RBAC: admin pode remover qualquer um, usuario só o próprio
 router.post('/comentario/remover', requireLogin, async (req, res) => {
   const { comentario_id, tmdb_movie_id } = req.body;
+
   try {
-    await pool.query(
-      'DELETE FROM comentarios WHERE id = ? AND usuario_id = ?',
-      [parseInt(comentario_id), req.userId]
+    // Primeiro, busca o comentário para saber de quem é
+    const [rows] = await pool.query(
+      'SELECT id, usuario_id FROM comentarios WHERE id = ?',
+      [parseInt(comentario_id)]
     );
+
+    if (rows.length === 0) {
+      req.flash('error', 'Comentário não encontrado.');
+      return res.redirect(`/filme/${tmdb_movie_id}`);
+    }
+
+    const comentario = rows[0];
+
+    // ENFORCEMENT REAL: usuario comum só pode excluir o próprio comentário
+    if (req.userRole !== 'admin' && comentario.usuario_id !== req.userId) {
+      // 403 — Forbidden. Mesmo que alguém forje a requisição via Postman/curl.
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return res.status(403).json({ error: 'Você não tem permissão para excluir este comentário.' });
+      }
+      req.flash('error', 'Você não tem permissão para excluir este comentário.');
+      return res.redirect(`/filme/${tmdb_movie_id}`);
+    }
+
+    // Admin pode excluir qualquer comentário (moderação)
+    await pool.query('DELETE FROM comentarios WHERE id = ?', [parseInt(comentario_id)]);
+
+    if (req.userRole === 'admin' && comentario.usuario_id !== req.userId) {
+      console.log(`[RBAC] Admin userId=${req.userId} removeu comentário id=${comentario_id} do usuario_id=${comentario.usuario_id}`);
+    }
+
     req.flash('success', 'Comentário removido.');
   } catch (err) {
     console.error('Erro ao remover comentário:', err);

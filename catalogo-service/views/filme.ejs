@@ -11,6 +11,12 @@
     <div class="nav-links">
       <a href="/filmes">Catálogo</a>
       <a href="/favoritos">Meus Favoritos</a>
+      <% if (user.role === 'admin') { %>
+        <a href="/admin/usuarios">⚙️ Admin</a>
+      <% } %>
+      <span class="user-badge <%= user.role === 'admin' ? 'admin-badge' : '' %>">
+        👤 <%= user.nome %> <%= user.role === 'admin' ? '(Admin)' : '' %>
+      </span>
       <a href="/logout" style="color: var(--accent);">Sair</a>
     </div>
   </nav>
@@ -65,15 +71,29 @@
         <% comentarios.forEach(function(c) { %>
           <div class="comment-card">
             <div class="comment-header">
-              <span class="comment-author">Seu Comentário</span>
+              <span class="comment-author">
+                <%= c.autor_nome || 'Usuário removido' %>
+                <% if (c.usuario_id === userId) { %>
+                  <span style="color: var(--primary); font-size: 0.8rem;">(você)</span>
+                <% } %>
+              </span>
               <span><%= new Date(c.criado_em).toLocaleDateString('pt-BR') %></span>
             </div>
             <div class="comment-text"><%= c.texto %></div>
-            <form action="/comentario/remover" method="POST" style="margin-top: 1rem; text-align: right;">
-              <input type="hidden" name="comentario_id" value="<%= c.id %>">
-              <input type="hidden" name="tmdb_movie_id" value="<%= filme.id %>">
-              <button type="submit" style="background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.9rem;">Excluir</button>
-            </form>
+            <%/* Botão "Excluir" só aparece se é o dono do comentário OU se é admin (moderação) */%>
+            <% if (c.usuario_id === userId || userRole === 'admin') { %>
+              <form action="/comentario/remover" method="POST" style="margin-top: 1rem; text-align: right;">
+                <input type="hidden" name="comentario_id" value="<%= c.id %>">
+                <input type="hidden" name="tmdb_movie_id" value="<%= filme.id %>">
+                <button type="submit" style="background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.9rem;">
+                  <% if (c.usuario_id !== userId && userRole === 'admin') { %>
+                    🛡️ Excluir (Admin)
+                  <% } else { %>
+                    Excluir
+                  <% } %>
+                </button>
+              </form>
+            <% } %>
           </div>
         <% }); %>
       <% } else { %>
@@ -81,5 +101,5 @@
       <% } %>
     </div>
   </div>
-</body>
+<script type="module" src="/js/iridescence.js"></script></body>
 </html>

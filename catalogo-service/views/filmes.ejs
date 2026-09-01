@@ -11,6 +11,9 @@
     <div class="nav-links">
       <a href="/filmes">Catálogo</a>
       <a href="/favoritos">Meus Favoritos</a>
+      <% if (user.role === 'admin') { %>
+        <a href="/admin/usuarios">⚙️ Admin</a>
+      <% } %>
       <span class="user-badge <%= user.role === 'admin' ? 'admin-badge' : '' %>">
         👤 <%= user.nome %> <%= user.role === 'admin' ? '(Admin)' : '' %>
       </span>
@@ -31,14 +34,20 @@
       <% if (typeof filmes !== 'undefined' && filmes.length > 0) { %>
         <% filmes.forEach(function(filme) { %>
           <a href="/filme/<%= filme.id %>" class="movie-card">
-            <img class="movie-poster" src="https://image.tmdb.org/t/p/w500<%= filme.poster_path %>" alt="<%= filme.title %>">
-            <% if (favoritosIds.includes(filme.id)) { %>
-              <div class="fav-icon">⭐</div>
-            <% } %>
-            <div class="movie-info">
-              <div class="movie-title"><%= filme.title %></div>
-              <div style="color: var(--text-muted); font-size: 0.9rem;">
-                ⭐ <%= filme.vote_average ? filme.vote_average.toFixed(1) : 'N/A' %>
+            <!-- STAR BORDER EFFECT -->
+            <div class="border-gradient-bottom" style="background: radial-gradient(circle, var(--primary), transparent 10%); animation-duration: 6s;"></div>
+            <div class="border-gradient-top" style="background: radial-gradient(circle, var(--primary), transparent 10%); animation-duration: 6s;"></div>
+            
+            <div class="movie-card-inner">
+              <img class="movie-poster" src="https://image.tmdb.org/t/p/w500<%= filme.poster_path %>" alt="<%= filme.title %>">
+              <% if (favoritosIds.includes(filme.id)) { %>
+                <div class="fav-icon">⭐</div>
+              <% } %>
+              <div class="movie-info">
+                <div class="movie-title"><%= filme.title %></div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;">
+                  ⭐ <%= filme.vote_average ? filme.vote_average.toFixed(1) : 'N/A' %>
+                </div>
               </div>
             </div>
           </a>
@@ -48,5 +57,5 @@
       <% } %>
     </div>
   </div>
-</body>
+<script type="module" src="/js/iridescence.js"></script></body>
 </html>

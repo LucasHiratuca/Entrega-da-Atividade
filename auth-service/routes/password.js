@@ -63,19 +63,24 @@ router.post('/forgot-password', async (req, res) => {
       to: email.trim().toLowerCase(),
       subject: '🔑 Recuperação de Senha — Catálogo Tom Hanks',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; background: #1a1a2e; color: #eee; border-radius: 8px;">
-          <h2 style="color: #e94560; text-align: center;">🎬 Catálogo Tom Hanks</h2>
-          <p>Olá, <strong>${usuario.nome}</strong>!</p>
-          <p>Recebemos uma solicitação para redefinir a sua senha. Clique no botão abaixo:</p>
-          <div style="text-align: center; margin: 20px 0;">
-            <a href="${resetLink}" style="background: #e94560; color: #fff; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
-              Redefinir minha senha
-            </a>
+        <div style="font-family: 'Inter', -apple-system, sans-serif; max-width: 500px; margin: 0 auto; padding: 30px 20px; background: #09090b; color: #fafafa; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h2 style="color: #f59e0b; margin: 0; font-size: 24px; letter-spacing: -0.5px;">🎬 Catálogo Tom Hanks</h2>
           </div>
-          <p style="color: #aaa; font-size: 0.85rem;">⏳ Este link expira em <strong>30 minutos</strong>.</p>
-          <p style="color: #aaa; font-size: 0.85rem;">Se você não solicitou essa redefinição, ignore este e-mail.</p>
-          <hr style="border-color: #333;">
-          <p style="color: #666; font-size: 0.75rem; text-align: center;">ISW055 — Professor @siriani</p>
+          <div style="background: rgba(24, 24, 27, 0.8); padding: 30px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
+            <p style="margin-top: 0; font-size: 16px;">Olá, <strong>${usuario.nome}</strong>!</p>
+            <p style="color: #d4d4d8; line-height: 1.6;">Recebemos uma solicitação para redefinir a sua senha. Clique no botão abaixo para criar uma nova:</p>
+            <div style="text-align: center; margin: 35px 0;">
+              <a href="${resetLink}" style="background: #f59e0b; color: #000; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);">
+                Redefinir minha senha
+              </a>
+            </div>
+            <p style="color: #a1a1aa; font-size: 13px; margin-bottom: 5px;">⏳ Este link expira em <strong>30 minutos</strong>.</p>
+            <p style="color: #71717a; font-size: 13px; margin: 0;">Se você não solicitou essa redefinição, ignore este e-mail.</p>
+          </div>
+          <div style="text-align: center; margin-top: 25px;">
+            <p style="color: #52525b; font-size: 12px; margin: 0;">ISW055 — Professor @siriani</p>
+          </div>
         </div>
       `,
     });
