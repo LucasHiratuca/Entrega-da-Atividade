@@ -9,9 +9,11 @@ const SALT_ROUNDS = 10;
 
 // Configura o transportador de e-mail (Mailtrap para desenvolvimento)
 function createMailTransporter() {
+  const port = parseInt(process.env.MAIL_PORT) || 587;
   return nodemailer.createTransport({
-    host: process.env.MAIL_HOST || 'sandbox.smtp.mailtrap.io',
-    port: parseInt(process.env.MAIL_PORT) || 2525,
+    host: process.env.MAIL_HOST || 'smtp.gmail.com', // Padrão para Gmail, mas aceita SendGrid, Brevo, etc.
+    port: port,
+    secure: port === 465, // true para 465 (SSL), false para 587 (TLS)
     auth: {
       user: process.env.MAIL_USER,
       pass: process.env.MAIL_PASS,
@@ -58,8 +60,10 @@ router.post('/forgot-password', async (req, res) => {
 
     // 5. Envia o e-mail
     const transporter = createMailTransporter();
+    const senderEmail = process.env.MAIL_USER || 'noreply@catalogo-tomhanks.com';
+    
     await transporter.sendMail({
-      from: '"Catálogo Tom Hanks" <noreply@catalogo-tomhanks.com>',
+      from: `"Catálogo Tom Hanks" <${senderEmail}>`,
       to: email.trim().toLowerCase(),
       subject: '🔑 Recuperação de Senha — Catálogo Tom Hanks',
       html: `

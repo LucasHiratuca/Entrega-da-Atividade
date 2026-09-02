@@ -1,4 +1,4 @@
-import { Renderer, Program, Mesh, Color, Triangle } from 'https://esm.sh/ogl';
+import { Renderer, Program, Mesh, Color, Triangle } from '/vendor/ogl/src/index.js';
 
 const vertexShader = `
 attribute vec2 uv;
