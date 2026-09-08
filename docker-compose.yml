@@ -4,30 +4,58 @@ services:
     container_name: catalogo_service
     restart: always
     ports:
-      # Único ponto de entrada público — ajuste a porta conforme sua reserva no Portainer
       - "8217:3000"
     env_file:
       - .env
     environment:
-      # Endereço interno do auth-service (resolvido pela rede Docker, nunca exposto)
       - AUTH_SERVICE_URL=http://auth-service:4000
-      # URL pública usada nos links de e-mail de recuperação de senha
       - CATALOG_PUBLIC_URL=http://localhost:8217
+      - LOG_SERVICE_URL=http://log-service:5000
     networks:
       - app_network
     depends_on:
       - auth-service
+      - log-service
 
   auth-service:
     build: ./auth-service
     container_name: auth_service
     restart: always
-    # Sem ports: — o auth-service não publica nenhuma porta para o host
     env_file:
       - .env
+    environment:
+      - LOG_SERVICE_URL=http://log-service:5000
     networks:
       - app_network
+    depends_on:
+      - log-service
+
+  log-service:
+    build: ./log-service
+    container_name: log_service
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    networks:
+      - app_network
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_audit
+    restart: always
+    networks:
+      - app_network
+    volumes:
+      - redis_data:/data
 
 networks:
   app_network:
     driver: bridge
+
+volumes:
+  redis_data:

@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../config/database');
+const { auditLog } = require('../utils/audit');
 
 const SALT_ROUNDS = 10;
 
@@ -62,30 +63,34 @@ router.post('/login', async (req, res) => {
     const senhaOk = await bcrypt.compare(senha, usuario.senha_hash);
 
     if (!senhaOk) {
+      auditLog({
+        usuario_id: usuario.id,
+        usuario_nome: usuario.nome,
+        acao: 'login_falhou',
+        detalhes: `Tentativa de login com senha incorreta para ${email}`,
+        ip: req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress,
+      });
       return res.status(401).json({ error: 'E-mail ou senha inválidos.' });
     }
 
-    // Gera o JWT com dados do usuário (nunca inclui a senha!)
     const token = jwt.sign(
-      {
-        userId: usuario.id,
-        nome: usuario.nome,
-        email: usuario.email,
-        role: usuario.role,
-      },
+      { userId: usuario.id, nome: usuario.nome, email: usuario.email, role: usuario.role },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
+    auditLog({
+      usuario_id: usuario.id,
+      usuario_nome: usuario.nome,
+      acao: 'login',
+      detalhes: `Login bem-sucedido (role: ${usuario.role})`,
+      ip: req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress,
+    });
+
     return res.json({
       message: 'Login realizado com sucesso!',
       token,
-      user: {
-        userId: usuario.id,
-        nome: usuario.nome,
-        email: usuario.email,
-        role: usuario.role,
-      },
+      user: { userId: usuario.id, nome: usuario.nome, email: usuario.email, role: usuario.role },
     });
 
   } catch (err) {
@@ -200,6 +205,13 @@ router.put('/users/:id/role', requireAdminJWT, async (req, res) => {
     }
 
     console.log(`[Auth] Papel do usuario_id=${targetId} alterado para "${role}" por admin_id=${req.adminUser.userId}`);
+    auditLog({
+      usuario_id: req.adminUser.userId,
+      usuario_nome: req.adminUser.nome,
+      acao: 'alterar_role',
+      detalhes: `Admin alterou role do usuario_id=${targetId} para "${role}"`,
+      ip: req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress,
+    });
     return res.json({ message: `Papel alterado para "${role}" com sucesso.` });
   } catch (err) {
     console.error('[Auth] Erro ao alterar papel:', err);

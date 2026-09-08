@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 const { requireLogin } = require('../middleware/auth');
+const { auditLog } = require('../utils/audit');
 
 // POST /comentario/adicionar
 router.post('/comentario/adicionar', requireLogin, async (req, res) => {
@@ -15,6 +16,7 @@ router.post('/comentario/adicionar', requireLogin, async (req, res) => {
       'INSERT INTO comentarios (usuario_id, tmdb_movie_id, texto) VALUES (?, ?, ?)',
       [req.userId, parseInt(tmdb_movie_id), texto.trim()]
     );
+    auditLog(req, 'comentar', `Comentou no filme ${tmdb_movie_id}: "${texto.trim().substring(0, 80)}"`);
     req.flash('success', 'Comentário adicionado!');
   } catch (err) {
     console.error('Erro ao comentar:', err);
@@ -28,7 +30,6 @@ router.post('/comentario/remover', requireLogin, async (req, res) => {
   const { comentario_id, tmdb_movie_id } = req.body;
 
   try {
-    // Primeiro, busca o comentário para saber de quem é
     const [rows] = await pool.query(
       'SELECT id, usuario_id FROM comentarios WHERE id = ?',
       [parseInt(comentario_id)]
@@ -43,7 +44,7 @@ router.post('/comentario/remover', requireLogin, async (req, res) => {
 
     // ENFORCEMENT REAL: usuario comum só pode excluir o próprio comentário
     if (req.userRole !== 'admin' && comentario.usuario_id !== req.userId) {
-      // 403 — Forbidden. Mesmo que alguém forje a requisição via Postman/curl.
+      auditLog(req, 'permissao_negada_403', `Tentou apagar comentário id=${comentario_id} de outro usuário (filme ${tmdb_movie_id})`);
       if (req.headers.accept && req.headers.accept.includes('application/json')) {
         return res.status(403).json({ error: 'Você não tem permissão para excluir este comentário.' });
       }
@@ -51,11 +52,13 @@ router.post('/comentario/remover', requireLogin, async (req, res) => {
       return res.redirect(`/filme/${tmdb_movie_id}`);
     }
 
-    // Admin pode excluir qualquer comentário (moderação)
     await pool.query('DELETE FROM comentarios WHERE id = ?', [parseInt(comentario_id)]);
 
     if (req.userRole === 'admin' && comentario.usuario_id !== req.userId) {
       console.log(`[RBAC] Admin userId=${req.userId} removeu comentário id=${comentario_id} do usuario_id=${comentario.usuario_id}`);
+      auditLog(req, 'moderacao_apagar_comentario', `Admin apagou comentário id=${comentario_id} do usuario_id=${comentario.usuario_id} (filme ${tmdb_movie_id})`);
+    } else {
+      auditLog(req, 'apagar_comentario', `Apagou próprio comentário id=${comentario_id} (filme ${tmdb_movie_id})`);
     }
 
     req.flash('success', 'Comentário removido.');

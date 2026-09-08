@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 const { requireLogin } = require('../middleware/auth');
+const { auditLog } = require('../utils/audit');
 
 const LIMITE_FAVORITOS_USUARIO = 15;
 
@@ -21,6 +22,7 @@ router.post('/favorito/adicionar', requireLogin, async (req, res) => {
         [req.userId]
       );
       if (countRows[0].total >= LIMITE_FAVORITOS_USUARIO) {
+        auditLog(req, 'favoritar_bloqueado', `Limite de ${LIMITE_FAVORITOS_USUARIO} favoritos atingido — filme ${tmdb_movie_id}`);
         req.flash('error', `Você atingiu o limite de ${LIMITE_FAVORITOS_USUARIO} favoritos. Remova um antes de adicionar outro.`);
         return res.redirect(`/filme/${tmdb_movie_id}`);
       }
@@ -30,6 +32,7 @@ router.post('/favorito/adicionar', requireLogin, async (req, res) => {
       'INSERT IGNORE INTO favoritos (usuario_id, tmdb_movie_id, titulo, poster_path) VALUES (?, ?, ?, ?)',
       [req.userId, parseInt(tmdb_movie_id), titulo, poster_path || null]
     );
+    auditLog(req, 'favoritar_filme', `Favoritou o filme "${titulo}" (id: ${tmdb_movie_id})`);
     req.flash('success', 'Filme favoritado!');
   } catch (err) {
     console.error('Erro ao favoritar:', err);
@@ -46,6 +49,7 @@ router.post('/favorito/remover', requireLogin, async (req, res) => {
       'DELETE FROM favoritos WHERE usuario_id = ? AND tmdb_movie_id = ?',
       [req.userId, parseInt(tmdb_movie_id)]
     );
+    auditLog(req, 'remover_favorito', `Removeu o filme ${tmdb_movie_id} dos favoritos`);
     req.flash('success', 'Filme removido dos favoritos.');
   } catch (err) {
     console.error('Erro ao remover favorito:', err);

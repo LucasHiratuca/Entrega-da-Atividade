@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
+const { auditLog } = require('../utils/audit');
 
 const AUTH_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:4000';
 
@@ -73,6 +74,7 @@ router.post('/login', async (req, res) => {
 
 // GET /logout
 router.get('/logout', (req, res) => {
+  auditLog(req, 'logout', 'Usuário fez logout');
   req.session.destroy(() => {
     res.redirect('/login');
   });
