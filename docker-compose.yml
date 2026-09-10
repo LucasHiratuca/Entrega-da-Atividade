@@ -1,6 +1,7 @@
 services:
   catalogo-service:
     build: ./catalogo-service
+    image: lucashiratuca/catalogo-service:latest
     container_name: catalogo_service
     restart: always
     ports:
@@ -19,6 +20,7 @@ services:
 
   auth-service:
     build: ./auth-service
+    image: lucashiratuca/auth-service:latest
     container_name: auth_service
     restart: always
     env_file:
@@ -32,6 +34,7 @@ services:
 
   log-service:
     build: ./log-service
+    image: lucashiratuca/log-service:latest
     container_name: log_service
     restart: always
     env_file:
