@@ -176,3 +176,11 @@ docker exec garage_s3 /garage bucket create perfis
 docker exec garage_s3 /garage bucket allow perfis --key GK9ae6ab4a2d12a3227b1a0d9a --read --write
 ```
 
+### 📋 Checklist de Entrega — Atividade 6
+- [x] `docker-compose.yml` com serviço do **Garage S3** adicionado
+- [x] Tabela `perfis` no MariaDB armazenando apenas a referência (`foto_key`)
+- [x] Upload de fotos validado (tipos de imagem e tamanho máximo de 5MB)
+- [x] Exibição da imagem via streaming controlado pelo backend (`/perfil/:userId/foto`)
+- [x] Trade-off documentado entre leitura pública direta vs streaming controlado
+- [x] Controle de acesso rígido: HTTP 403 ao tentar editar perfil de outro usuário
+- [x] Menção ao professor [@siriani](https://github.com/siriani) mantida no topo do README
