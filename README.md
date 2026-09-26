@@ -2,185 +2,151 @@
 
 Projeto da disciplina **ISW055**, orientado pelo professor [@siriani](https://github.com/siriani).
 
-Aplicação web que exibe a filmografia de Tom Hanks consumindo a [API do TMDB](https://www.themoviedb.org/), permitindo favoritar filmes e realizar comentários.
+Aplicação web que exibe a filmografia de Tom Hanks consumindo a [API do TMDB](https://www.themoviedb.org/), permitindo favoritar filmes, realizar comentários com moderação, auditoria via Redis e perfil com upload de fotos no **Garage S3**.
 
 ---
 
-## 🏗️ Arquitetura — Atividades 3 e 4
+## 📅 Escopo e Registro de Entregas da P1
 
-O projeto evoluiu de uma arquitetura monolítica (Atividade 2) para **microsserviços desacoplados** (Atividade 3) e agora conta com **controle de acesso por papel (RBAC)** (Atividade 4).
+> **Status:** Todas as atividades previstas no cronograma até 07/10 foram concluídas com comprovação em histórico de commits no Git.
+
+| Nº | Atividade | Data Planejada | Data Realizada | Repositório / Prova no Git | Evidência / Status |
+|:---:|---|:---:|:---:|---|---|
+| **1** | **Agenda telefônica em Flask** | 07/08/2026 | **07/08/2026** | [`LucasHiratuca/aula_01_cloud`](https://github.com/LucasHiratuca/aula_01_cloud) (Commit `28230dc` e `738ce73`) | Realizada em sala — Flask + MySQL |
+| **2** | **Catálogo de filmes — Tom Hanks** | 20/08/2026 | **20/08/2026** | Commit [`9a57391`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/9a57391) | Monólito inicial consumindo TMDB + Favoritos |
+| **3** | **Desacoplando o login — microsserviço** | 28/08/2026 | **27/08/2026** | Commit [`320028a`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/320028a) | Microsserviço `auth-service` + `docker-compose.yml` |
+| **4** | **Controle de acesso por papel — RBAC** | 04/09/2026 | **01/09/2026** | Commits [`6636f4d`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/6636f4d) e [`a8e31ef`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/a8e31ef) | Enforcement 403, moderação e painel admin |
+| **5** | **Logs e auditoria** | 25/09/2026 | **08/09/2026** *(Prints: 15/09)* | Commits [`e6c6682`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/e6c6682) e [`8bc9faa`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/8bc9faa) | Microsserviço `log-service` com Redis Streams |
+| **6** | **Upload e perfil de usuário** | 02/10/2026 | **26/09/2026** | Commits [`27856a8`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/27856a8) e [`8ca3fb6`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/8ca3fb6) | Object storage com **Garage S3**, streaming e auditoria OWASP |
+
+---
+
+## 🏗️ Arquitetura Geral da Aplicação
+
+O projeto evoluiu de uma aplicação inicial (Atividade 2) para uma **arquitetura de microsserviços desacoplados e distribuídos**:
 
 ```text
 Navegador do Usuário
-       ↓ (HTTP)
+       ↓ (HTTP na porta 8217)
 [ catalogo-service (Porta 3000 → Host: 8217) ]  --- Único ponto público
-       ↓ (Rede Interna Docker — JWT no header)
-[ auth-service (Porta 4000 → Isolado) ]
-       ↓
-    MariaDB (usuarios, reset_tokens, favoritos, comentarios)
-       ↓
-   Mailtrap (Disparo de E-mails de recuperação)
+       │
+       ├── (Rede Interna Docker — JWT) ──> [ auth-service (Porta 4000 → Isolado) ]
+       │                                            ↓
+       │                                         MariaDB (usuarios, reset_tokens, favoritos, comentarios, perfis)
+       │
+       ├── (HTTP S3 API na Porta 3900) ──> [ garage_s3 (Object Storage em Rust) ]
+       │                                            ↓
+       │                                         Volumes: garage_meta & garage_data
+       │
+       └── (HTTP REST na Porta 5000)   ──> [ log-service (Auditoria) ]
+                                                    ↓
+                                                 [ Redis (Streams de Auditoria) ]
 ```
 
-### `catalogo-service` — porta pública
-- Serve o frontend (EJS) e rotas de filmes, favoritos e comentários
-- **Decodifica o JWT localmente** para verificar o papel (`role`) do usuário — Padrão B
-- Aplica as regras de permissão no backend (enforcement no servidor)
+---
 
-### `auth-service` — sem porta pública
-- Acessível apenas pela rede interna Docker (`http://auth-service:4000`)
-- Login, cadastro, papéis de usuário, recuperação de senha e gerenciamento de usuários
-- Emite JWT contendo `userId`, `nome`, `email` e `role`
+## 📌 Detalhamento das Atividades
+
+### Atividade 1 — Agenda Telefônica em Flask
+* **Data Planejada:** 07/08/2026 | **Data Realizada:** 07/08/2026
+* **Repositório:** [`LucasHiratuca/aula_01_cloud`](https://github.com/LucasHiratuca/aula_01_cloud)
+* Realizada em sala de aula — Aplicação Flask com conexão ao banco de dados MySQL na nuvem para cadastro e listagem de clientes/telefones.
+
+### Atividade 2 — Catálogo de Filmes (Tom Hanks)
+* **Data Planejada:** 20/08/2026 | **Data Realizada:** 20/08/2026
+* **Commit:** [`9a57391`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/9a57391)
+* Criação da interface com EJS, consumo da API do TMDB para listar filmografia e sistema inicial de favoritos.
+
+### Atividade 3 — Desacoplamento do Serviço de Autenticação
+* **Data Planejada:** 28/08/2026 | **Data Realizada:** 27/08/2026
+* **Commit:** [`320028a`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/320028a)
+* Separação em dois microsserviços no `docker-compose.yml`. O `auth-service` opera isolado sem portas públicas, emitindo JWT e disparando e-mails reais de recuperação via Mailtrap.
+
+### Atividade 4 — Controle de Acesso Baseado em Papel (RBAC)
+* **Data Planejada:** 04/09/2026 | **Data Realizada:** 01/09/2026
+* **Commits:** [`6636f4d`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/6636f4d) e [`a8e31ef`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/a8e31ef)
+* Adoção do **Padrão B (claims no JWT)** para verificação instantânea no servidor:
+  * Usuário comum: catálogo, favoritos e comentários próprios.
+  * Administrador: moderação de comentários de terceiros e painel `/admin/usuarios` para alterar papéis de acesso.
+  * Enforcement 100% no backend retornando **HTTP 403 Forbidden**.
+
+### Atividade 5 — Logs e Auditoria com Redis
+* **Data Planejada:** 25/09/2026 | **Data Realizada:** 08/09/2026 *(Prints em 15/09/2026)*
+* **Commits:** [`e6c6682`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/e6c6682) e [`8bc9faa`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/8bc9faa)
+* Microsserviço dedicado `log-service` na porta 5000 conectado a instância do **Redis 7**. Registro assíncrono de eventos (login, logout, falhas de autenticação, exclusão e auditoria) com visualização restrita para administradores em `/admin/logs`.
+
+### Atividade 6 — Perfil de Usuário & Object Storage com Garage S3
+* **Data Planejada:** 02/10/2026 | **Data Realizada:** 26/09/2026
+* **Commits:** [`27856a8`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/27856a8) e [`8ca3fb6`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/8ca3fb6)
+
+#### Por que a imagem não mora no banco de dados?
+Armazenar binários (`BLOB`) no MariaDB sobrecarrega memória e infla backups (`mysqldump`). O padrão arquitetural adotado: **o arquivo binário vai para o Garage S3 e o banco guarda somente a referência (`foto_key`)**.
+
+#### Por que Garage S3?
+O **Garage S3** (`dxflrs/garage:v1.0.1`) é um engine moderno, distribuído e ultraleve escrito em **Rust**, 100% compatível com a API S3 (AWS Signature V4) e com persistência em SQLite local.
+
+#### Trade-offs de Exibição da Imagem
+Optamos por **Streaming Seguro via Backend (`/perfil/:userId/foto`)**:
+* Mantém o bucket do Garage S3 100% privado na rede interna do Docker (`app_network`);
+* Não exige expor a porta 3900 para a internet, operando com excelência em ambientes de nuvem/proxy (Portainer/Cloudflare);
+* Serve o stream diretamente com cabeçalhos `Content-Type` e `Cache-Control`.
+
+#### Controle de Acesso e Segurança (OWASP Top 10)
+* O backend confere a identidade autenticada (`req.userId`);
+* Tentativas de editar perfis alheios são barradas com **HTTP 403 Forbidden** antes de qualquer operação no banco ou no storage;
+* Relatório completo e suíte de testes em [`SECURITY_AUDIT.md`](./SECURITY_AUDIT.md).
 
 ---
 
-## 🔐 Atividade 4 — RBAC (Role-Based Access Control)
+## 📦 Tabelas do Banco de Dados (MariaDB)
 
-### Permissões por Papel
-
-| Ação | `usuario` | `admin` |
-|---|:---:|:---:|
-| Ver catálogo de filmes | ✅ | ✅ |
-| Favoritar / desfavoritar | ✅ | ✅ |
-| Comentar em filmes | ✅ | ✅ |
-| Excluir **seus próprios** comentários | ✅ | ✅ |
-| Excluir comentário **de qualquer usuário** (moderação) | ❌ 403 | ✅ |
-| Ver painel de administração (listar usuários) | ❌ 403 | ✅ |
-| Promover/rebaixar papel de outro usuário | ❌ 403 | ✅ |
-
-### Ação Exclusiva de Admin
-- **Moderação de comentários**: um admin pode excluir o comentário de qualquer usuário diretamente na página do filme. Um usuário comum só consegue excluir os seus.
-- **Painel de administração** (`/admin/usuarios`): lista todos os usuários cadastrados e permite promover para `admin` ou rebaixar para `usuario`.
-
-### Enforcement no Backend
-A verificação de permissão acontece **no servidor**, nunca no cliente:
-- O middleware `requireAdmin` retorna **HTTP 403 Forbidden** quando um usuário comum tenta acessar rotas administrativas — mesmo que a requisição venha via Postman ou curl, sem passar pela interface.
-- A rota `POST /comentario/remover` verifica no servidor se o `usuario_id` do comentário corresponde ao `userId` do JWT antes de permitir a exclusão. Se não corresponder e o papel não for `admin`, retorna **403**.
-
----
-
-## 🏛️ Padrão A ou B? Justificativa
-
-**Este projeto usa o Padrão B — claims no JWT.**
-
-O papel (`role`) do usuário já vem embutido dentro do token JWT que é emitido no momento do login. Quando o `catalogo-service` precisa decidir se permite ou nega uma ação, ele **decodifica o token localmente** usando `jsonwebtoken.verify()` e lê o campo `role` — sem precisar fazer uma chamada de rede ao `auth-service`.
-
-**Vantagem:** Cada verificação de permissão é instantânea (não depende do `auth-service` estar online ou responder rápido). O `auth-service` só é chamado para operações que realmente precisam dele (login, cadastro, alterar papel, recuperar senha).
-
-**Tradeoff:** Se o papel de um usuário for alterado (ex: promovido a admin), a mudança só tem efeito quando ele fizer logout e login novamente, porque o token antigo ainda carrega o papel anterior até expirar (24h). Em um sistema de produção, isso poderia ser mitigado com tokens de curta duração + refresh tokens.
-
----
-
-## 📦 Tabelas do Banco
-
-| Tabela | Serviço responsável | Descrição |
+| Tabela | Serviço Responsável | Descrição |
 |---|---|---|
-| `usuarios` | `auth-service` | Dados de login, e-mail e `role ENUM('usuario','admin')` |
-| `reset_tokens` | `auth-service` | Tokens de recuperação de senha com expiração de 30min |
-| `favoritos` | `catalogo-service` | Filmes favoritados por usuário |
-| `comentarios` | `catalogo-service` | Comentários por usuário e filme (moderáveis por admin) |
+| `usuarios` | `auth-service` | Login, e-mail, hash bcrypt e role (`usuario`/`admin`) |
+| `reset_tokens` | `auth-service` | Tokens UUID para recuperação de senha (expiração 30min) |
+| `favoritos` | `catalogo-service` | Filmes favoritados vinculados ao usuário |
+| `comentarios` | `catalogo-service` | Comentários em filmes com moderação administrativa |
+| `perfis` | `catalogo-service` | Bio do usuário e referência da foto (`foto_key`) |
 
 ---
 
-## 🚀 Como executar localmente
+## 🚀 Como Executar Localmente
 
 ### Pré-requisitos
-- Docker e Docker Compose
-- Conta no [Mailtrap](https://mailtrap.io/) para testes de e-mail
+- Docker e Docker Compose instalados
 
-### Variáveis de ambiente
-Crie um `.env` na raiz:
-```env
-TMDB_API_KEY=sua_chave_tmdb
-DB_HOST=seu_host
-DB_USER=seu_usuario
-DB_PASSWORD=sua_senha
-DB_NAME=nome_do_banco
-DB_PORT=3306
-SESSION_SECRET=segredo_sessao
-JWT_SECRET=segredo_jwt
-MAIL_HOST=sandbox.smtp.mailtrap.io
-MAIL_PORT=2525
-MAIL_USER=usuario_mailtrap
-MAIL_PASS=senha_mailtrap
-```
-
-### Subir os containers
+### Subir a stack completa
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
-Acesse: `http://localhost:8217`
+
+### Inicialização do Garage S3 (Layout e Bucket)
+```bash
+# Executa o script de inicialização automatizado:
+powershell -ExecutionPolicy Bypass -File .\init-garage.ps1
+```
+
+Acesse no navegador:
+* **Aplicação:** `http://localhost:8217`
+* **Garage S3 (API):** `http://localhost:3900`
 
 ---
 
-## 🧪 Checklist de Entrega
+## 🧪 Suíte de Testes de Segurança
 
-### Atividade 3 — Microsserviços
-- [x] Dois containers separados no `docker-compose.yml`
-- [x] `auth-service` sem porta publicada para o host
-- [x] Rede interna Docker compartilhada (`app_network`)
-- [x] Recuperação de senha com token UUID + expiração de 30 minutos
-- [x] Envio real de e-mail (Mailtrap)
-
-### Atividade 4 — RBAC
-- [x] Permissões documentadas por papel (tabela acima)
-- [x] Ação exclusiva de admin: moderar comentários de qualquer usuário
-- [x] Enforcement no backend com 403 (testável via Postman)
-- [x] Painel de administração para promover/rebaixar usuários
-- [x] Resposta justificada: Padrão B (claims no JWT)
+Para rodar a bateria de testes de permissão e conformidade OWASP no container:
+```bash
+docker exec catalogo_service node owasp-security-suite.js
+```
 
 ---
 
-## 🪣 Atividade 6 — Perfil de Usuário & Object Storage com Garage S3
+## 📋 Checklist Geral de Entregas (P1)
 
-### Por que a imagem não mora no banco de dados?
-Armazenar arquivos binários (como fotos em colunas `BLOB`) dentro de um banco relacional como o MariaDB é uma má prática em arquiteturas de produção:
-1. **Infla o banco:** Backups (`mysqldump`) ficam gigantescos e lentos.
-2. **Degradação de cache e I/O:** Consultas que buscam dados de texto acabam varrendo megabytes desnecessários de memória.
-3. **Escala independente:** O tráfego de arquivos estáticos deve ser servido e armazenado de forma desacoplada das transações SQL.
-
-**Padrão adotado:** O arquivo binário vai para o **Garage S3** (Object Storage S3-compatible dedicado), e o MariaDB guarda apenas uma **referência** (`foto_key`).
-
-### 📦 Por que Garage S3?
-O **Garage S3** (`dxflrs/garage`) é um engine de object storage moderno, open-source e distribuído, escrito em **Rust**:
-- **Consumo mínimo de recursos:** Consome frações de memória e CPU em relação ao MinIO tradicional, ideal para pequenos clusters e ambientes containerizados.
-- **100% compatível com a API S3 (AWS Signature V4):** Permite o uso de qualquer SDK padrão da indústria (como AWS SDK ou o cliente S3/MinIO no Node.js).
-- **Resiliente e auto-contido:** Opera com motor de metadados SQLite local e replicação de dados.
-
-### 🖼️ Exibição da Imagem e Trade-offs de Design
-
-**Decisão implementada: Leitura controlada via Streaming Backend (`/perfil/:userId/foto`)**
-
-| Critério | Bucket com Leitura Pública Direta | Streaming Controlado via Backend ✅ |
-|---|---|---|
-| **Segurança** | ❌ Arquivos expostos a raspagem pública direta | ✅ Acesso controlado e autenticado pela aplicação |
-| **Isolamento de Rede** | ❌ Exige expor a porta do S3 (3900) para a internet | ✅ Garage fica 100% isolado na rede interna Docker (`app_network`) |
-| **Compatibilidade em Nuvem** | ❌ Em proxies reversos como Cloudflare/Portainer, portas adicionais não são mapeadas | ✅ Funciona tanto em `localhost:8217` quanto na URL pública do professor |
-| **Cache** | ✅ Cache nativo HTTP | ✅ Cabeçalho `Cache-Control: public, max-age=3600` adicionado no backend |
-
-### 🔒 Controle de Acesso ao Perfil
-- Cada usuário só pode editar o seu próprio perfil.
-- As rotas `GET /perfil/:userId/editar` e `POST /perfil/:userId/editar` verificam a identidade real decodificada da sessão/JWT (`req.userId`).
-- Tentativas de enviar um ID de outro usuário na URL ou no corpo da requisição são recusadas no backend com **HTTP 403 Forbidden** (página `acesso-negado`).
-
-### ⚙️ Inicialização do Garage S3
-O Garage é configurado pelo arquivo `garage.toml` e inicializado com:
-```bash
-# 1. Atribuir capacidade ao nó
-docker exec garage_s3 /garage layout assign -z dc1 -c 1G $(docker exec garage_s3 /garage node id -q)
-# 2. Aplicar layout
-docker exec garage_s3 /garage layout apply --version 1
-# 3. Criar chave de acesso e bucket
-docker exec garage_s3 /garage key import --yes -n app-key GK9ae6ab4a2d12a3227b1a0d9a f46bb999a2d2615ad200369932ccff5454f113c74c4614e6027dc2380dcc5632
-docker exec garage_s3 /garage bucket create perfis
-docker exec garage_s3 /garage bucket allow perfis --key GK9ae6ab4a2d12a3227b1a0d9a --read --write
-```
-
-### 📋 Checklist de Entrega — Atividade 6
-- [x] `docker-compose.yml` com serviço do **Garage S3** adicionado
-- [x] Tabela `perfis` no MariaDB armazenando apenas a referência (`foto_key`)
-- [x] Upload de fotos validado (tipos de imagem e tamanho máximo de 5MB)
-- [x] Exibição da imagem via streaming controlado pelo backend (`/perfil/:userId/foto`)
-- [x] Trade-off documentado entre leitura pública direta vs streaming controlado
-- [x] Controle de acesso rígido: HTTP 403 ao tentar editar perfil de outro usuário
-- [x] Menção ao professor [@siriani](https://github.com/siriani) mantida no topo do README
+- [x] **Atividade 1:** Agenda telefônica em Flask (`LucasHiratuca/aula_01_cloud`)
+- [x] **Atividade 2:** Catálogo de filmes do Tom Hanks com favoritos
+- [x] **Atividade 3:** Microsserviço de autenticação desacoplado
+- [x] **Atividade 4:** Controle de acesso por papel (RBAC) com 403
+- [x] **Atividade 5:** Logs e auditoria com Redis Streams
+- [x] **Atividade 6:** Upload de foto e perfil com Garage S3 e streaming seguro
+- [x] Menção ao orientador [@siriani](https://github.com/siriani) mantida
