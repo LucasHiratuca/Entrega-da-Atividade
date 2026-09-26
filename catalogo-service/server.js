@@ -7,11 +7,13 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const { initDatabase } = require('./config/database');
+const { garantirBucket } = require('./utils/minio');
 const authRoutes = require('./routes/auth');
 const movieRoutes = require('./routes/movies');
 const favoriteRoutes = require('./routes/favorites');
 const commentRoutes = require('./routes/comments');
 const adminRoutes = require('./routes/admin');
+const perfilRoutes = require('./routes/perfil');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -45,6 +47,7 @@ app.use('/', movieRoutes);
 app.use('/', favoriteRoutes);
 app.use('/', commentRoutes);
 app.use('/', adminRoutes);
+app.use('/', perfilRoutes);
 
 // Rota raiz
 app.get('/', (req, res) => {
@@ -56,6 +59,7 @@ app.get('/', (req, res) => {
 async function start() {
   try {
     await initDatabase();
+    await garantirBucket();
     app.listen(PORT, () => {
       console.log(`[Catálogo] Servidor público rodando em http://localhost:${PORT}`);
     });

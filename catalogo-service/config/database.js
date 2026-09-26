@@ -37,7 +37,18 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
-    console.log('[Catálogo] Tabelas de favoritos/comentários criadas/verificadas.');
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS perfis (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        usuario_id INT NOT NULL UNIQUE,
+        bio TEXT,
+        foto_key VARCHAR(500),
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+
+    console.log('[Catálogo] Tabelas de favoritos/comentários/perfis criadas/verificadas.');
   } finally {
     conn.release();
   }

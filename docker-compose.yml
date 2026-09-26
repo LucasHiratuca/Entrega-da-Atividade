@@ -12,11 +12,16 @@ services:
       - AUTH_SERVICE_URL=http://auth-service:4000
       - CATALOG_PUBLIC_URL=http://localhost:8217
       - LOG_SERVICE_URL=http://log-service:5000
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=perfis
     networks:
       - app_network
     depends_on:
       - auth-service
       - log-service
+      - minio
 
   auth-service:
     build: ./auth-service
@@ -56,9 +61,26 @@ services:
     volumes:
       - redis_data:/data
 
+  minio:
+    image: minio/minio:latest
+    container_name: minio_perfis
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - app_network
+
 networks:
   app_network:
     driver: bridge
 
 volumes:
   redis_data:
+  minio_data:

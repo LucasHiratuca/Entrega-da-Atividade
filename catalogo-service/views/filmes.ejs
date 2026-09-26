@@ -12,6 +12,7 @@
     <div class="nav-links">
       <a href="/filmes">Catálogo</a>
       <a href="/favoritos">Meus Favoritos</a>
+      <a href="/perfil/<%= user.userId || user.id %>">Meu Perfil</a>
       <% if (user.role === 'admin') { %>
         <a href="/admin/usuarios">⚙️ Admin</a>
       <% } %>
