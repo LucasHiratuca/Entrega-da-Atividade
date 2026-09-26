@@ -54,8 +54,8 @@ router.post('/forgot-password', async (req, res) => {
       [token, usuario.id, agora, expiraEm]
     );
 
-    // 4. Monta o link de redefinição (aponta para o catálogo, que é o ponto público)
-    const baseUrl = resetBaseUrl || process.env.CATALOG_PUBLIC_URL || 'http://localhost:3000';
+    // 4. Monta o link de redefinição (blindado contra Password Reset Poisoning)
+    const baseUrl = process.env.CATALOG_PUBLIC_URL || 'http://localhost:8217';
     const resetLink = `${baseUrl}/redefinir-senha/${token}`;
 
     // 5. Envia o e-mail

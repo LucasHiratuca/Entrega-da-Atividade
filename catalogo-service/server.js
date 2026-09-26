@@ -34,7 +34,12 @@ app.use(
     secret: process.env.SESSION_SECRET || 'segredo-temporario-dev',
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 1000 * 60 * 60 * 24 },
+    cookie: {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 60 * 24,
+    },
   })
 );
 
