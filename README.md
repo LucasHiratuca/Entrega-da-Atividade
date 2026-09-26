@@ -128,3 +128,51 @@ Acesse: `http://localhost:8217`
 - [x] Enforcement no backend com 403 (testável via Postman)
 - [x] Painel de administração para promover/rebaixar usuários
 - [x] Resposta justificada: Padrão B (claims no JWT)
+
+---
+
+## 🪣 Atividade 6 — Perfil de Usuário & Object Storage com Garage S3
+
+### Por que a imagem não mora no banco de dados?
+Armazenar arquivos binários (como fotos em colunas `BLOB`) dentro de um banco relacional como o MariaDB é uma má prática em arquiteturas de produção:
+1. **Infla o banco:** Backups (`mysqldump`) ficam gigantescos e lentos.
+2. **Degradação de cache e I/O:** Consultas que buscam dados de texto acabam varrendo megabytes desnecessários de memória.
+3. **Escala independente:** O tráfego de arquivos estáticos deve ser servido e armazenado de forma desacoplada das transações SQL.
+
+**Padrão adotado:** O arquivo binário vai para o **Garage S3** (Object Storage S3-compatible dedicado), e o MariaDB guarda apenas uma **referência** (`foto_key`).
+
+### 📦 Por que Garage S3?
+O **Garage S3** (`dxflrs/garage`) é um engine de object storage moderno, open-source e distribuído, escrito em **Rust**:
+- **Consumo mínimo de recursos:** Consome frações de memória e CPU em relação ao MinIO tradicional, ideal para pequenos clusters e ambientes containerizados.
+- **100% compatível com a API S3 (AWS Signature V4):** Permite o uso de qualquer SDK padrão da indústria (como AWS SDK ou o cliente S3/MinIO no Node.js).
+- **Resiliente e auto-contido:** Opera com motor de metadados SQLite local e replicação de dados.
+
+### 🖼️ Exibição da Imagem e Trade-offs de Design
+
+**Decisão implementada: Leitura controlada via Streaming Backend (`/perfil/:userId/foto`)**
+
+| Critério | Bucket com Leitura Pública Direta | Streaming Controlado via Backend ✅ |
+|---|---|---|
+| **Segurança** | ❌ Arquivos expostos a raspagem pública direta | ✅ Acesso controlado e autenticado pela aplicação |
+| **Isolamento de Rede** | ❌ Exige expor a porta do S3 (3900) para a internet | ✅ Garage fica 100% isolado na rede interna Docker (`app_network`) |
+| **Compatibilidade em Nuvem** | ❌ Em proxies reversos como Cloudflare/Portainer, portas adicionais não são mapeadas | ✅ Funciona tanto em `localhost:8217` quanto na URL pública do professor |
+| **Cache** | ✅ Cache nativo HTTP | ✅ Cabeçalho `Cache-Control: public, max-age=3600` adicionado no backend |
+
+### 🔒 Controle de Acesso ao Perfil
+- Cada usuário só pode editar o seu próprio perfil.
+- As rotas `GET /perfil/:userId/editar` e `POST /perfil/:userId/editar` verificam a identidade real decodificada da sessão/JWT (`req.userId`).
+- Tentativas de enviar um ID de outro usuário na URL ou no corpo da requisição são recusadas no backend com **HTTP 403 Forbidden** (página `acesso-negado`).
+
+### ⚙️ Inicialização do Garage S3
+O Garage é configurado pelo arquivo `garage.toml` e inicializado com:
+```bash
+# 1. Atribuir capacidade ao nó
+docker exec garage_s3 /garage layout assign -z dc1 -c 1G $(docker exec garage_s3 /garage node id -q)
+# 2. Aplicar layout
+docker exec garage_s3 /garage layout apply --version 1
+# 3. Criar chave de acesso e bucket
+docker exec garage_s3 /garage key import --yes -n app-key GK9ae6ab4a2d12a3227b1a0d9a f46bb999a2d2615ad200369932ccff5454f113c74c4614e6027dc2380dcc5632
+docker exec garage_s3 /garage bucket create perfis
+docker exec garage_s3 /garage bucket allow perfis --key GK9ae6ab4a2d12a3227b1a0d9a --read --write
+```
+

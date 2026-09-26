@@ -4,17 +4,17 @@ const multer = require('multer');
 const { pool } = require('../config/database');
 const { requireLogin } = require('../middleware/auth');
 const { auditLog } = require('../utils/audit');
-const { minioClient, BUCKET, getFotoUrl } = require('../utils/minio');
+const { s3Client, BUCKET } = require('../utils/s3');
 const { randomUUID } = require('crypto');
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB máximo
 });
 
 const TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
-// GET /perfil/:userId
+// GET /perfil/:userId — Visualizar perfil
 router.get('/perfil/:userId', requireLogin, async (req, res) => {
   const userId = parseInt(req.params.userId);
   try {
@@ -34,10 +34,10 @@ router.get('/perfil/:userId', requireLogin, async (req, res) => {
       [userId]
     );
 
-    const fotoUrl = await getFotoUrl(perfil?.foto_key);
+    // URL da foto aponta para a rota que serve o stream do Garage S3
+    const fotoUrl = perfil?.foto_key ? `/perfil/${userId}/foto` : null;
     const ehDono = req.userId === userId;
 
-    // Nome do usuário — vem da sessão se for o próprio, senão usa o ID
     const nomeExibicao = ehDono ? (req.session.user?.nome || `Usuário #${userId}`) : `Usuário #${userId}`;
 
     res.render('perfil', {
@@ -58,11 +58,47 @@ router.get('/perfil/:userId', requireLogin, async (req, res) => {
   }
 });
 
-// GET /perfil/:userId/editar
+// GET /perfil/:userId/foto — Recupera a foto armazenada no Garage S3 e serve via streaming
+router.get('/perfil/:userId/foto', async (req, res) => {
+  const userId = parseInt(req.params.userId);
+  try {
+    const [[perfil]] = await pool.query(
+      'SELECT foto_key FROM perfis WHERE usuario_id = ?',
+      [userId]
+    );
+
+    if (!perfil || !perfil.foto_key) {
+      return res.status(404).send('Foto não encontrada');
+    }
+
+    const dataStream = await s3Client.getObject(BUCKET, perfil.foto_key);
+
+    const ext = perfil.foto_key.split('.').pop().toLowerCase();
+    const mimeTypes = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+    };
+
+    if (mimeTypes[ext]) {
+      res.setHeader('Content-Type', mimeTypes[ext]);
+    }
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+
+    dataStream.pipe(res);
+  } catch (err) {
+    console.error('[Garage S3] Erro ao buscar foto:', err.message);
+    res.status(404).send('Foto não encontrada');
+  }
+});
+
+// GET /perfil/:userId/editar — Formulário de edição
 router.get('/perfil/:userId/editar', requireLogin, async (req, res) => {
   const userId = parseInt(req.params.userId);
 
-  // CONTROLE DE ACESSO: backend verifica sessão, não confia no parâmetro da URL
+  // CONTROLE DE ACESSO: backend valida sessão, recusando edição de perfil alheio
   if (req.userId !== userId) {
     return res.status(403).render('acesso-negado', {
       user: req.session.user,
@@ -91,7 +127,7 @@ router.get('/perfil/:userId/editar', requireLogin, async (req, res) => {
   }
 });
 
-// POST /perfil/:userId/editar
+// POST /perfil/:userId/editar — Atualizar bio e enviar foto para Garage S3
 router.post('/perfil/:userId/editar', requireLogin, upload.single('foto'), async (req, res) => {
   const userId = parseInt(req.params.userId);
 
@@ -117,16 +153,17 @@ router.post('/perfil/:userId/editar', requireLogin, upload.single('foto'), async
     fotoKeyNova = `usuario-${userId}/${randomUUID()}.${ext}`;
 
     try {
-      await minioClient.putObject(
+      await s3Client.putObject(
         BUCKET,
         fotoKeyNova,
         req.file.buffer,
         req.file.size,
         { 'Content-Type': req.file.mimetype }
       );
+      console.log(`[Garage S3] Objeto '${fotoKeyNova}' gravado com sucesso no bucket '${BUCKET}'.`);
     } catch (err) {
-      console.error('[MinIO] Erro no upload:', err);
-      req.flash('error', 'Erro ao enviar a foto. Tente novamente.');
+      console.error('[Garage S3] Erro no upload:', err);
+      req.flash('error', 'Erro ao enviar a foto para o Garage S3. Tente novamente.');
       return res.redirect(`/perfil/${userId}/editar`);
     }
   }
@@ -143,7 +180,7 @@ router.post('/perfil/:userId/editar', requireLogin, upload.single('foto'), async
         [bio, userId]
       );
     }
-    auditLog(req, 'editar_perfil', `Atualizou o perfil${fotoKeyNova ? ' e foto' : ''}`);
+    auditLog(req, 'editar_perfil', `Atualizou o perfil${fotoKeyNova ? ' e foto (Garage S3)' : ''}`);
     req.flash('success', 'Perfil atualizado com sucesso!');
     return res.redirect(`/perfil/${userId}`);
   } catch (err) {

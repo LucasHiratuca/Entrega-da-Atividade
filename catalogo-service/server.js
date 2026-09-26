@@ -7,7 +7,7 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const { initDatabase } = require('./config/database');
-const { garantirBucket } = require('./utils/minio');
+const { garantirBucket } = require('./utils/s3');
 const authRoutes = require('./routes/auth');
 const movieRoutes = require('./routes/movies');
 const favoriteRoutes = require('./routes/favorites');
