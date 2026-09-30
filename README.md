@@ -85,11 +85,14 @@ Armazenar binários (`BLOB`) no MariaDB sobrecarrega memória e infla backups (`
 #### Por que Garage S3?
 O **Garage S3** (`dxflrs/garage:v1.0.1`) é um engine moderno, distribuído e ultraleve escrito em **Rust**, 100% compatível com a API S3 (AWS Signature V4) e com persistência em SQLite local.
 
-#### Trade-offs de Exibição da Imagem
-Optamos por **Streaming Seguro via Backend (`/perfil/:userId/foto`)**:
-* Mantém o bucket do Garage S3 100% privado na rede interna do Docker (`app_network`);
-* Não exige expor a porta 3900 para a internet, operando com excelência em ambientes de nuvem/proxy (Portainer/Cloudflare);
-* Serve o stream diretamente com cabeçalhos `Content-Type` e `Cache-Control`.
+#### Trade-offs de Exibição da Imagem (Decisão Arquitetural)
+Para exibir a foto de volta no perfil do usuário, foram avaliadas três abordagens principais:
+
+| Abordagem | Vantagens | Desvantagens | Veredito |
+|---|---|---|---|
+| **1. Bucket com Leitura Pública** | • Implementação trivial (tag `<img src="http://storage/bucket/foto.jpg">`)<br>• Sem processamento no servidor Node.js | • Imagens e fotos de perfil ficam 100% expostas sem qualquer autenticação<br>• Exige expor a porta do object storage para a internet pública<br>• Permite enumeração e scraping de fotos de todos os usuários | ❌ **Descartado:** Violação do princípio do menor privilégio e risco de exposição de dados. |
+| **2. URL Pré-assinada / Temporária** | • Acesso temporário com expiração (ex: 1 hora)<br>• O storage atende as requisições diretamente sem sobrecarregar o Node.js | • Em ambientes conteinerizados ou atrás de reverse proxy (Cloudflare/Portainer), o storage gera links com seu hostname interno (`minio:9000` ou `garage:3900`), que **não resolvem no navegador do usuário**<br>• Exigiria configurar DNS público ou hairpinning para o endpoint do storage | ⚠️ **Analisado:** Válido para nuvens públicas nativas (AWS S3), mas problemático em ambientes Docker/laboratório com proxy reverso. |
+| **3. Streaming Seguro via Backend (`/perfil/:userId/foto`)** | • **Zero portas do storage expostas:** o Garage S3 fica 100% isolado na rede interna do Docker (`app_network`)<br>• Funciona perfeitamente em qualquer ambiente (localhost, Docker interno, Portainer, túnel Cloudflare)<br>• Cabeçalhos de cache otimizados (`Cache-Control: public, max-age=3600`)<br>• Permite validação de permissão antes de entregar qualquer byte | ✅ **ADOTADO:** A rota `GET /perfil/:userId/foto` recupera o stream do Garage S3 via API S3 interna e repassa ao cliente com `Content-Type` validado. Máxima segurança e portabilidade. |
 
 #### Controle de Acesso e Segurança (OWASP Top 10)
 * O backend confere a identidade autenticada (`req.userId`);
