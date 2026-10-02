@@ -52,28 +52,38 @@ def add_body(text, bold_prefix="", italic=False, space_after=6):
     r.font.italic = italic
     return p
 
-def add_placeholder_box(figura_num, legenda):
-    table = doc.add_table(rows=1, cols=1)
-    table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    cell = table.cell(0, 0)
-    cell.width = Inches(6.5)
-    set_cell_background(cell, "F1F5F9")
-    set_cell_margins(cell, top=350, bottom=350, left=200, right=200)
+import os
 
-    p = cell.paragraphs[0]
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p.paragraph_format.space_after = Pt(4)
-    r1 = p.add_run("[ COLE O PRINT AQUI ]\n")
-    r1.font.name = "Arial"
-    r1.font.size = Pt(11)
-    r1.font.bold = True
-    r1.font.color.rgb = RGBColor(0x64, 0x74, 0x8b)
+def add_placeholder_box(figura_num, legenda, image_path=None):
+    if image_path and os.path.exists(image_path):
+        p_img = doc.add_paragraph()
+        p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_img.paragraph_format.space_before = Pt(8)
+        p_img.paragraph_format.space_after = Pt(4)
+        run_img = p_img.add_run()
+        run_img.add_picture(image_path, width=Inches(6.0))
+    else:
+        table = doc.add_table(rows=1, cols=1)
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        cell = table.cell(0, 0)
+        cell.width = Inches(6.5)
+        set_cell_background(cell, "F1F5F9")
+        set_cell_margins(cell, top=350, bottom=350, left=200, right=200)
 
-    r2 = p.add_run("Clique nesta caixa e cole a imagem (Ctrl + V)")
-    r2.font.name = "Arial"
-    r2.font.size = Pt(9)
-    r2.font.italic = True
-    r2.font.color.rgb = RGBColor(0x94, 0xa3, 0xb8)
+        p = cell.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.paragraph_format.space_after = Pt(4)
+        r1 = p.add_run("[ COLE O PRINT AQUI ]\n")
+        r1.font.name = "Arial"
+        r1.font.size = Pt(11)
+        r1.font.bold = True
+        r1.font.color.rgb = RGBColor(0x64, 0x74, 0x8b)
+
+        r2 = p.add_run("Clique nesta caixa e cole a imagem (Ctrl + V)")
+        r2.font.name = "Arial"
+        r2.font.size = Pt(9)
+        r2.font.italic = True
+        r2.font.color.rgb = RGBColor(0x94, 0xa3, 0xb8)
 
     p_legenda = doc.add_paragraph()
     p_legenda.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -168,7 +178,7 @@ r_av.font.color.rgb = RGBColor(0x64, 0x74, 0x8b)
 p_nome = doc.add_paragraph()
 p_nome.alignment = WD_ALIGN_PARAGRAPH.CENTER
 p_nome.paragraph_format.space_after = Pt(100)
-r_nome = p_nome.add_run("Lucas Hiratuca")
+r_nome = p_nome.add_run("Lucas Tetsuya Hiratuca")
 r_nome.font.name = "Times New Roman"
 r_nome.font.size = Pt(14)
 r_nome.font.bold = True
@@ -319,7 +329,7 @@ add_ficha(
 )
 add_body("Implementou-se o modelo de autorização Role-Based Access Control (RBAC) adotando o Padrão B (claims embutidas diretamente no payload do JWT). O campo role (usuario ou admin) trafega assinado no token, permitindo verificação instantânea no catalogo-service sem overhead de consultas repetidas ao banco de dados.\n\nForam criados os middlewares requireLogin e requireAdmin. Usuários autenticados com perfil comum têm acesso restrito ao catálogo, favoritos e comentários próprios. Tentativas de acessar rotas de moderação ou painel de gestão de usuários (/admin/usuarios) são barradas com status HTTP 403 Forbidden diretamente na camada do servidor.", bold_prefix="O que foi feito. ")
 add_placeholder_box(7, "Atividade 4 – evidência da entrega (link, data e hora visíveis)")
-add_placeholder_box(8, "Atividade 4 – resultado (o sistema/mapa/artigo funcionando)")
+add_placeholder_box(8, "Atividade 4 – resultado (painel de administração de usuários e RBAC em funcionamento)", "outputs/admin_output.png")
 add_body("Garantir que tipos de dados inteiros para userId não causassem falhas na comparação estrita (===) no JavaScript. Foi adotado parsing consistente com parseInt() em todos os middlewares e controladores de permissão.", bold_prefix="Dificuldades e como foram resolvidas. ")
 
 doc.add_page_break()
@@ -334,7 +344,7 @@ add_ficha(
 )
 add_body("Foi introduzido um terceiro microsserviço dedicado, o log-service (porta 5000), acoplado a uma instância do Redis 7. O serviço implementa ingestão assíncrona de eventos via HTTP POST, persistindo as entradas de auditoria na estrutura de alta performance Redis Streams.\n\nO catalogo-service consome o utilitário de auditoria registrando eventos críticos: logins com sucesso, encerramentos de sessão, falhas de autenticação, exclusão de comentários e edições de perfil. A interface /admin/logs foi criada com restrição exclusiva a administradores para visualização e filtragem cronológica reversa dos registros em tempo real.", bold_prefix="O que foi feito. ")
 add_placeholder_box(9, "Atividade 5 – evidência da entrega (link, data e hora visíveis)")
-add_placeholder_box(10, "Atividade 5 – resultado (o sistema/mapa/artigo funcionando)")
+add_placeholder_box(10, "Atividade 5 – resultado (tela de consulta de logs de auditoria via Redis Streams)", "outputs/logs_output.png")
 add_body("Garantir a sobrevivência dos logs a reinicializações de contêineres. Foi configurado um volume nomeado persistente para o contêiner do Redis no docker-compose.yml, além de timeout não-bloqueante no envio de logs para evitar impacto na experiência do usuário final caso o Redis ficasse temporariamente indisponível.", bold_prefix="Dificuldades e como foram resolvidas. ")
 
 doc.add_page_break()
@@ -349,7 +359,7 @@ add_ficha(
 )
 add_body("Construção da página de perfil com suporte a upload de foto de avatar persistida em object storage. Foi integrado o Garage S3 (dxflrs/garage:v1.0.1), um engine leve e distribuído escrito em Rust compatível com AWS S3 API (Signature V4). A tabela perfis no MariaDB armazena apenas a biografia e a chave textual do objeto (foto_key), desacoplando o binário do banco relacional.\n\nA entrega da imagem foi arquitetada via streaming seguro pelo backend (/perfil/:userId/foto): o catalogo-service obtém o stream do Garage S3 via rede interna e o devolve ao navegador com cabeçalhos HTTP adequados (Content-Type validado e Cache-Control). O upload exige validação de MIME type (JPEG/PNG/WebP/GIF), limite de 5MB e geração de nomes via randomUUID(). Foi realizada ainda auditoria OWASP Top 10 com 100% de aprovação e remediação do CWE-640 (Password Reset Poisoning).", bold_prefix="O que foi feito. ")
 add_placeholder_box(11, "Atividade 6 – evidência da entrega (link, data e hora visíveis)")
-add_placeholder_box(12, "Atividade 6 – resultado (o sistema/mapa/artigo funcionando)")
+add_placeholder_box(12, "Atividade 6 – resultado (perfil do usuário exibindo foto de avatar carregada do Garage S3 e bio)", "outputs/foto_perfil.png")
 add_body("Em outubro de 2025, a imagem oficial do MinIO foi descontinuada do Docker Hub, motivando a migração definitiva para o Garage S3. Além disso, URLs pré-assinadas geravam links com o host interno do contêiner (garage:3900), inacessível aos navegadores dos clientes. A substituição por streaming direto no backend resolveu a compatibilidade universalmente em ambientes locais e Cloudflare.", bold_prefix="Dificuldades e como foram resolvidas. ")
 
 doc.add_page_break()
@@ -377,7 +387,7 @@ c_r.width = Inches(3.0)
 
 p_l = c_l.paragraphs[0]
 p_l.add_run("_________________________________________\n").font.color.rgb = RGBColor(0x64, 0x74, 0x8b)
-r_aluno = p_l.add_run("Lucas Hiratuca\n")
+r_aluno = p_l.add_run("Lucas Tetsuya Hiratuca\n")
 r_aluno.font.bold = True
 p_l.add_run("Aluno(a)")
 

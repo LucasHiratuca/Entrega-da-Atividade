@@ -1,10 +1,10 @@
 // Relatório P1 — ISW055 (Computação em Nuvem) — FATEC Pompeia
 // Orientador: Prof. Allan Lincoln Rodrigues Siriani
-// Aluno: Lucas Hiratuca
+// Aluno: Lucas Tetsuya Hiratuca
 
 #set document(
-  title: "P1 — ISW055 — Lucas Hiratuca",
-  author: "Lucas Hiratuca",
+  title: "P1 — ISW055 — Lucas Tetsuya Hiratuca",
+  author: "Lucas Tetsuya Hiratuca",
   date: datetime(year: 2026, month: 10, day: 7)
 )
 
@@ -18,7 +18,7 @@
         columns: (1fr, 1fr),
         align: (left, right),
         text(size: 8.5pt, fill: luma(80))[ISW055 – P1 – Relatório bimestral],
-        text(size: 8.5pt, fill: luma(80))[Lucas Hiratuca]
+        text(size: 8.5pt, fill: luma(80))[Lucas Tetsuya Hiratuca]
       )
       #v(-4pt)
       #line(length: 100%, stroke: 0.4pt + luma(180))
@@ -120,7 +120,7 @@
   #text(size: 11pt, fill: luma(80))[Avaliação individual – 2026.2]
 
   #v(4.5cm)
-  #text(size: 14pt, weight: "bold")[Lucas Hiratuca]
+  #text(size: 14pt, weight: "bold")[Lucas Tetsuya Hiratuca]
 
   #v(3.5cm)
   #text(size: 10.5pt)[Prof. Allan Lincoln Rodrigues Siriani] \
@@ -275,7 +275,7 @@ Foram criados os middlewares `requireLogin` e `requireAdmin`. Usuários autentic
 
 #print-placeholder(arquivo: none, legenda: [Atividade 4 – evidência da entrega (link, data e hora visíveis)])
 
-#print-placeholder(arquivo: none, legenda: [Atividade 4 – resultado (o sistema/mapa/artigo funcionando)])
+#print-placeholder(arquivo: "outputs/admin_output.png", legenda: [Atividade 4 – resultado (painel de administração de usuários e RBAC em funcionamento)])
 
 *Dificuldades e como foram resolvidas.* Garantir que tipos de dados inteiros para `userId` não causassem falhas na comparação estrita (`===`) no JavaScript. Foi adotado parsing consistente com `parseInt()` em todos os middlewares e controladores de permissão.
 
@@ -298,7 +298,7 @@ O `catalogo-service` consome o utilitário de auditoria registrando eventos crí
 
 #print-placeholder(arquivo: none, legenda: [Atividade 5 – evidência da entrega (link, data e hora visíveis)])
 
-#print-placeholder(arquivo: none, legenda: [Atividade 5 – resultado (o sistema/mapa/artigo funcionando)])
+#print-placeholder(arquivo: "outputs/logs_output.png", legenda: [Atividade 5 – resultado (tela de consulta de logs de auditoria via Redis Streams)])
 
 *Dificuldades e como foram resolvidas.* Garantir a sobrevivência dos logs a reinicializações de contêineres. Foi configurado um volume nomeado persistente para o contêiner do Redis no `docker-compose.yml`, além de timeout não-bloqueante no envio de logs para evitar impacto na experiência do usuário final caso o Redis ficasse temporariamente indisponível.
 
@@ -321,7 +321,7 @@ A entrega da imagem foi arquitetada via *streaming seguro pelo backend* (`/perfi
 
 #print-placeholder(arquivo: none, legenda: [Atividade 6 – evidência da entrega (link, data e hora visíveis)])
 
-#print-placeholder(arquivo: none, legenda: [Atividade 6 – resultado (o sistema/mapa/artigo funcionando)])
+#print-placeholder(arquivo: "outputs/foto_perfil.png", legenda: [Atividade 6 – resultado (perfil do usuário exibindo foto de avatar carregada do Garage S3 e bio)])
 
 *Dificuldades e como foram resolvidas.* Em outubro de 2025, a imagem oficial do MinIO foi descontinuada do Docker Hub, motivando a migração definitiva para o Garage S3. Além disso, URLs pré-assinadas geravam links com o host interno do contêiner (`garage:3900`), inacessível aos navegadores dos clientes. A substituição por streaming direto no backend resolveu a compatibilidade universalmente em ambientes locais e Cloudflare.
 
@@ -350,7 +350,7 @@ Declaro que este relatório foi elaborado por mim, individualmente, e que as evi
   align: (left, right),
   [
     #line(length: 6.5cm, stroke: 0.6pt + luma(80))
-    #text(weight: "bold")[Lucas Hiratuca]
+    #text(weight: "bold")[Lucas Tetsuya Hiratuca]
   ],
   [
     #v(10pt)
