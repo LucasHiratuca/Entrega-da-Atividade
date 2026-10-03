@@ -338,14 +338,14 @@ doc.add_page_break()
 add_title("4.5  Atividade 5 – Logs e auditoria", size=12)
 add_ficha(
     "Novo log-service com Redis registrando login, ações sensíveis e tentativas negadas.",
-    "25/09/2026", "08/09/2026 12:57", "entregue",
-    "GitHub – commits e6c6682 e 8bc9faa + print da consulta de logs pelo admin",
+    "25/09/2026", "08/09/2026 12:57 (commits e6c6682 e ef488af)", "entregue",
+    "GitHub – commits e6c6682, ef488af e 8bc9faa + print da consulta de logs pelo admin",
     "https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/e6c6682"
 )
-add_body("Foi introduzido um terceiro microsserviço dedicado, o log-service (porta 5000), acoplado a uma instância do Redis 7. O serviço implementa ingestão assíncrona de eventos via HTTP POST, persistindo as entradas de auditoria na estrutura de alta performance Redis Streams.\n\nO catalogo-service consome o utilitário de auditoria registrando eventos críticos: logins com sucesso, encerramentos de sessão, falhas de autenticação, exclusão de comentários e edições de perfil. A interface /admin/logs foi criada com restrição exclusiva a administradores para visualização e filtragem cronológica reversa dos registros em tempo real.", bold_prefix="O que foi feito. ")
+add_body("Foi introduzido um terceiro microsserviço dedicado, o log-service (porta 5000), acoplado a uma instância do Redis 7. O serviço implementa ingestão assíncrona de eventos via HTTP POST, persistindo as entradas de auditoria na estrutura de alta performance Redis Streams (audit:events) com retenção circular (MAXLEN ~ 10000).\n\nO catalogo-service e o auth-service consomem o utilitário de auditoria registrando eventos críticos em segundo plano: logins com sucesso, encerramentos de sessão (logout), tentativas de login negadas com senha incorreta (capturando e-mail e IP), cadastros de novos usuários, moderação de comentários e favoritos.\n\nA tela de consulta de logs (/admin/logs) tem acesso restrito exclusivamente a usuários com papel de Administrador, por meio de um botão dedicado (\"📜 Ver Logs de Auditoria\") presente no painel de administração. Conforme demonstrado na entrega de RBAC, usuários com perfil padrão não conseguem acessar o painel especial de administração (recebendo HTTP 403 Forbidden). Em paralelo, o próprio log-service valida o token JWT via middleware requireAdminJWT, garantindo controle de acesso em profundidade e permitindo visualização cronológica reversa (XREVRANGE).", bold_prefix="O que foi feito. ")
 add_placeholder_box(9, "Atividade 5 – evidência da entrega (link, data e hora visíveis)")
 add_placeholder_box(10, "Atividade 5 – resultado (tela de consulta de logs de auditoria via Redis Streams)", "outputs/logs_output.png")
-add_body("Garantir a sobrevivência dos logs a reinicializações de contêineres. Foi configurado um volume nomeado persistente para o contêiner do Redis no docker-compose.yml, além de timeout não-bloqueante no envio de logs para evitar impacto na experiência do usuário final caso o Redis ficasse temporariamente indisponível.", bold_prefix="Dificuldades e como foram resolvidas. ")
+add_body("Garantir a sobrevivência dos logs a reinicializações de contêineres e sanar inconsistências no build das imagens Docker. Configurou-se um volume nomeado persistente para o contêiner do Redis no docker-compose.yml e timeout não-bloqueante de 2 segundos no envio de logs para evitar impacto na experiência do usuário. Adicionalmente, no commit ef488af, foram configurados arquivos .dockerignore nos microsserviços, eliminando problemas de build gerados pela inclusão indevida da pasta local node_modules.", bold_prefix="Dificuldades e como foram resolvidas. ")
 
 doc.add_page_break()
 
