@@ -18,6 +18,7 @@ Aplicação web que exibe a filmografia de Tom Hanks consumindo a [API do TMDB](
 | **4** | **Controle de acesso por papel — RBAC** | 04/09/2026 | **01/09/2026** | Commits [`6636f4d`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/6636f4d) e [`a8e31ef`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/a8e31ef) | Enforcement 403, moderação e painel admin |
 | **5** | **Logs e auditoria** | 25/09/2026 | **08/09/2026** *(Prints: 15/09)* | Commits [`e6c6682`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/e6c6682) e [`8bc9faa`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/8bc9faa) | Microsserviço `log-service` com Redis Streams |
 | **6** | **Upload e perfil de usuário** | 02/10/2026 | **26/09/2026** | Commits [`27856a8`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/27856a8) e [`8ca3fb6`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/8ca3fb6) | Object storage com **Garage S3**, streaming e auditoria OWASP |
+| **7** | **Plano Premium com Stripe** | 09/10/2026 | **10/10/2026** | Continuação no repositório | Stripe Checkout, Webhooks assinados e Favoritos Ilimitados |
 
 ---
 
@@ -32,15 +33,17 @@ Navegador do Usuário
        │
        ├── (Rede Interna Docker — JWT) ──> [ auth-service (Porta 4000 → Isolado) ]
        │                                            ↓
-       │                                         MariaDB (usuarios, reset_tokens, favoritos, comentarios, perfis)
+       │                                         MariaDB (usuarios, favoritos, comentarios, perfis)
        │
        ├── (HTTP S3 API na Porta 3900) ──> [ garage_s3 (Object Storage em Rust) ]
        │                                            ↓
        │                                         Volumes: garage_meta & garage_data
        │
-       └── (HTTP REST na Porta 5000)   ──> [ log-service (Auditoria) ]
-                                                    ↓
-                                                 [ Redis (Streams de Auditoria) ]
+       ├── (HTTP REST na Porta 5000)   ──> [ log-service (Auditoria) ]
+       │                                            ↓
+       │                                         [ Redis (Streams de Auditoria) ]
+       │
+       └── (HTTPS Externo / Webhook)   ──> [ Stripe (Checkout Hosted & Webhooks) ]
 ```
 
 ---
@@ -99,16 +102,38 @@ Para exibir a foto de volta no perfil do usuário, foram avaliadas três abordag
 * Tentativas de editar perfis alheios são barradas com **HTTP 403 Forbidden** antes de qualquer operação no banco ou no storage;
 * Relatório completo e suíte de testes em [`SECURITY_AUDIT.md`](./SECURITY_AUDIT.md).
 
+### Atividade 7 — Serviço Baseado em Pagamento: Plano Premium com Stripe
+* **Data Planejada:** 09/10/2026 | **Data Realizada:** 10/10/2026
+* **Orientador:** [@siriani](https://github.com/siriani)
+
+#### Por que Pagamento é um Serviço à Parte?
+Processar dados de cartão de crédito internamente exige conformidade rigorosa com normas internacionais de segurança (**PCI-DSS Nível 1**). A arquitetura padrão de mercado adotada neste projeto delega essa responsabilidade integralmente para um provedor especializado (**Stripe**).
+
+O sistema **nunca vê, recebe ou armazena números de cartão, datas de validade ou códigos CVV**. O formulário de pagamento é 100% hospedado pelo próprio Stripe (`Stripe Checkout`). Nosso banco de dados guarda exclusivamente o identificador do cliente (`stripe_customer_id`), da assinatura (`stripe_subscription_id`) e a flag `is_premium`.
+
+#### Fluxo de Checkout e Webhook Assíncrono
+1. **Início do Checkout:** O usuário autenticado clica em assinar (`POST /premium/checkout`);
+2. **Criação da Sessão:** O `catalogo-service` cria uma `Checkout Session` na API do Stripe e redireciona o usuário (HTTP 303) para a página segura de pagamento do Stripe;
+3. **Pagamento em Modo de Teste:** O usuário preenche os dados utilizando cartões de teste oficiais do Stripe (`4242 4242...`);
+4. **Webhook Assíncrono (`POST /webhook/stripe`):** O Stripe envia uma chamada HTTP assíncrona notificando o evento `checkout.session.completed`;
+5. **Validação Criptográfica de Assinatura:** O backend valida a assinatura recebida no header `stripe-signature` utilizando o segredo do webhook (`STRIPE_WEBHOOK_SECRET`) e o corpo em formato RAW (Buffer);
+6. **Ativação no Banco de Dados:** O usuário é promovido a `is_premium = TRUE` no MariaDB, disparando log de auditoria no `log-service`.
+
+#### Benefícios Reais e Verificáveis do Usuário Premium
+* **⭐ Favoritos Ilimitados:** Usuários gratuitos são bloqueados ao atingir o limite de 15 favoritos (`LIMITE_FAVORITOS_USUARIO = 15`), enquanto usuários Premium e Administradores possuem capacidade ilimitada;
+* **🎖️ Selo Exclusivo de Assinante:** Distintivo dourado no perfil público (`/perfil/:userId`) e indicador na barra de navegação;
+* **💬 Destaque em Comentários:** Identificação visual especial com badge `⭐ Premium` em todos os comentários publicados na filmografia.
+
 ---
 
 ## 📦 Tabelas do Banco de Dados (MariaDB)
 
 | Tabela | Serviço Responsável | Descrição |
 |---|---|---|
-| `usuarios` | `auth-service` | Login, e-mail, hash bcrypt e role (`usuario`/`admin`) |
+| `usuarios` | `auth-service` / `catalogo-service` | Login, e-mail, hash bcrypt, role (`usuario`/`admin`), `is_premium`, IDs Stripe |
 | `reset_tokens` | `auth-service` | Tokens UUID para recuperação de senha (expiração 30min) |
-| `favoritos` | `catalogo-service` | Filmes favoritados vinculados ao usuário |
-| `comentarios` | `catalogo-service` | Comentários em filmes com moderação administrativa |
+| `favoritos` | `catalogo-service` | Filmes favoritados vinculados ao usuário (com limite de 15 p/ free e ilimitado p/ premium) |
+| `comentarios` | `catalogo-service` | Comentários em filmes com moderação administrativa e badge premium |
 | `perfis` | `catalogo-service` | Bio do usuário e referência da foto (`foto_key`) |
 
 ---
@@ -131,6 +156,7 @@ powershell -ExecutionPolicy Bypass -File .\init-garage.ps1
 
 Acesse no navegador:
 * **Aplicação:** `http://localhost:8217`
+* **Página do Plano Premium:** `http://localhost:8217/premium`
 * **Garage S3 (API):** `http://localhost:3900`
 
 ---
@@ -144,7 +170,7 @@ docker exec catalogo_service node owasp-security-suite.js
 
 ---
 
-## 📋 Checklist Geral de Entregas (P1)
+## 📋 Checklist Geral de Entregas (P1 e Atividades)
 
 - [x] **Atividade 1:** Agenda telefônica em Flask (`LucasHiratuca/aula_01_cloud`)
 - [x] **Atividade 2:** Catálogo de filmes do Tom Hanks com favoritos
@@ -152,4 +178,6 @@ docker exec catalogo_service node owasp-security-suite.js
 - [x] **Atividade 4:** Controle de acesso por papel (RBAC) com 403
 - [x] **Atividade 5:** Logs e auditoria com Redis Streams
 - [x] **Atividade 6:** Upload de foto e perfil com Garage S3 e streaming seguro
+- [x] **Atividade 7:** Plano Premium com Stripe Checkout, Webhooks assinados e Favoritos Ilimitados
 - [x] Menção ao orientador [@siriani](https://github.com/siriani) mantida
+

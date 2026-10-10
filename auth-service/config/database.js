@@ -49,6 +49,25 @@ async function initDatabase() {
       // Coluna já existe — segue normalmente
     }
 
+    try {
+      await conn.query(`
+        ALTER TABLE usuarios ADD COLUMN is_premium BOOLEAN DEFAULT FALSE
+      `);
+      console.log('Coluna "is_premium" adicionada à tabela de usuários.');
+    } catch (err) {}
+
+    try {
+      await conn.query(`
+        ALTER TABLE usuarios ADD COLUMN stripe_customer_id VARCHAR(255) NULL
+      `);
+    } catch (err) {}
+
+    try {
+      await conn.query(`
+        ALTER TABLE usuarios ADD COLUMN stripe_subscription_id VARCHAR(255) NULL
+      `);
+    } catch (err) {}
+
     console.log('[Auth Service] Tabelas criadas/verificadas com sucesso.');
   } finally {
     conn.release();

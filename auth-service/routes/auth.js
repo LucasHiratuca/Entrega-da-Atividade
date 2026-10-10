@@ -51,7 +51,7 @@ router.post('/login', async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      'SELECT id, nome, email, senha_hash, role FROM usuarios WHERE email = ?',
+      'SELECT id, nome, email, senha_hash, role, is_premium FROM usuarios WHERE email = ?',
       [email.trim().toLowerCase()]
     );
 
@@ -74,7 +74,13 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { userId: usuario.id, nome: usuario.nome, email: usuario.email, role: usuario.role },
+      {
+        userId: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        role: usuario.role,
+        is_premium: Boolean(usuario.is_premium)
+      },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -83,14 +89,20 @@ router.post('/login', async (req, res) => {
       usuario_id: usuario.id,
       usuario_nome: usuario.nome,
       acao: 'login',
-      detalhes: `Login bem-sucedido (role: ${usuario.role})`,
+      detalhes: `Login bem-sucedido (role: ${usuario.role}, premium: ${Boolean(usuario.is_premium)})`,
       ip: req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress,
     });
 
     return res.json({
       message: 'Login realizado com sucesso!',
       token,
-      user: { userId: usuario.id, nome: usuario.nome, email: usuario.email, role: usuario.role },
+      user: {
+        userId: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        role: usuario.role,
+        is_premium: Boolean(usuario.is_premium)
+      },
     });
 
   } catch (err) {

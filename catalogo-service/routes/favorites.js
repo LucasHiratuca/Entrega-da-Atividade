@@ -15,15 +15,16 @@ router.post('/favorito/adicionar', requireLogin, async (req, res) => {
   }
 
   try {
-    // ENFORCEMENT: usuário comum tem limite de 15 favoritos
-    if (req.userRole !== 'admin') {
+    // ENFORCEMENT: usuário comum gratuito tem limite de 15 favoritos
+    // Usuários com perfil 'admin' OU assinantes 'premium' têm favoritos ILIMITADOS!
+    if (req.userRole !== 'admin' && !req.isPremium) {
       const [countRows] = await pool.query(
         'SELECT COUNT(*) AS total FROM favoritos WHERE usuario_id = ?',
         [req.userId]
       );
       if (countRows[0].total >= LIMITE_FAVORITOS_USUARIO) {
-        auditLog(req, 'favoritar_bloqueado', `Limite de ${LIMITE_FAVORITOS_USUARIO} favoritos atingido — filme ${tmdb_movie_id}`);
-        req.flash('error', `Você atingiu o limite de ${LIMITE_FAVORITOS_USUARIO} favoritos. Remova um antes de adicionar outro.`);
+        auditLog(req, 'favoritar_bloqueado', `Limite de ${LIMITE_FAVORITOS_USUARIO} favoritos atingido (usuário gratuito) — filme ${tmdb_movie_id}`);
+        req.flash('error', `Você atingiu o limite de ${LIMITE_FAVORITOS_USUARIO} favoritos da conta gratuita. Assine o Plano Premium para ter favoritos ilimitados!`);
         return res.redirect(`/filme/${tmdb_movie_id}`);
       }
     }
@@ -32,7 +33,7 @@ router.post('/favorito/adicionar', requireLogin, async (req, res) => {
       'INSERT IGNORE INTO favoritos (usuario_id, tmdb_movie_id, titulo, poster_path) VALUES (?, ?, ?, ?)',
       [req.userId, parseInt(tmdb_movie_id), titulo, poster_path || null]
     );
-    auditLog(req, 'favoritar_filme', `Favoritou o filme "${titulo}" (id: ${tmdb_movie_id})`);
+    auditLog(req, 'favoritar_filme', `Favoritou o filme "${titulo}" (id: ${tmdb_movie_id}, premium: ${Boolean(req.isPremium)})`);
     req.flash('success', 'Filme favoritado!');
   } catch (err) {
     console.error('Erro ao favoritar:', err);
@@ -69,6 +70,7 @@ router.get('/favoritos', requireLogin, async (req, res) => {
       favoritos,
       user: req.session.user,
       userRole: req.userRole,
+      isPremium: Boolean(req.isPremium),
       totalFavoritos: favoritos.length,
       limiteFavoritos: LIMITE_FAVORITOS_USUARIO,
     });
@@ -78,6 +80,7 @@ router.get('/favoritos', requireLogin, async (req, res) => {
       favoritos: [],
       user: req.session.user,
       userRole: req.userRole,
+      isPremium: Boolean(req.isPremium),
       totalFavoritos: 0,
       limiteFavoritos: LIMITE_FAVORITOS_USUARIO,
     });

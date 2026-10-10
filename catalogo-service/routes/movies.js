@@ -77,9 +77,9 @@ router.get('/filme/:id', requireLogin, async (req, res) => {
     );
     const isFavorito = favRows.length > 0;
 
-    // Busca TODOS os comentários do filme (de todos os usuários) com o nome do autor
+    // Busca TODOS os comentários do filme (de todos os usuários) com o nome e status premium do autor
     const [comentarios] = await pool.query(
-      `SELECT c.id, c.usuario_id, c.texto, c.criado_em, u.nome AS autor_nome
+      `SELECT c.id, c.usuario_id, c.texto, c.criado_em, u.nome AS autor_nome, u.is_premium AS autor_is_premium
        FROM comentarios c
        LEFT JOIN usuarios u ON c.usuario_id = u.id
        WHERE c.tmdb_movie_id = ?
@@ -94,6 +94,7 @@ router.get('/filme/:id', requireLogin, async (req, res) => {
       user: req.session.user,
       userId: req.userId,
       userRole: req.userRole,
+      isPremium: Boolean(req.isPremium),
       error: req.flash('error'),
       success: req.flash('success'),
     });

@@ -48,7 +48,29 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
 
-    console.log('[Catálogo] Tabelas de favoritos/comentários/perfis criadas/verificadas.');
+    // Atividade 7 — Colunas de assinatura Premium e Stripe na tabela usuarios
+    try {
+      await conn.query(`
+        ALTER TABLE usuarios ADD COLUMN is_premium BOOLEAN DEFAULT FALSE
+      `);
+      console.log('[Catálogo] Coluna "is_premium" adicionada à tabela usuarios.');
+    } catch (e) {
+      // Coluna já existe
+    }
+
+    try {
+      await conn.query(`
+        ALTER TABLE usuarios ADD COLUMN stripe_customer_id VARCHAR(255) NULL
+      `);
+    } catch (e) {}
+
+    try {
+      await conn.query(`
+        ALTER TABLE usuarios ADD COLUMN stripe_subscription_id VARCHAR(255) NULL
+      `);
+    } catch (e) {}
+
+    console.log('[Catálogo] Tabelas de favoritos/comentários/perfis/premium verificadas.');
   } finally {
     conn.release();
   }

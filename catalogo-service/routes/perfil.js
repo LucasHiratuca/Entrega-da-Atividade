@@ -34,6 +34,12 @@ router.get('/perfil/:userId', requireLogin, async (req, res) => {
       [userId]
     );
 
+    const [[usuarioInfo]] = await pool.query(
+      'SELECT is_premium FROM usuarios WHERE id = ?',
+      [userId]
+    );
+    const perfilIsPremium = Boolean(usuarioInfo?.is_premium);
+
     // URL da foto aponta para a rota que serve o stream do Garage S3
     const fotoUrl = perfil?.foto_key ? `/perfil/${userId}/foto` : null;
     const ehDono = req.userId === userId;
@@ -44,6 +50,8 @@ router.get('/perfil/:userId', requireLogin, async (req, res) => {
       user: req.session.user,
       userRole: req.userRole,
       perfilUsuarioId: userId,
+      perfilIsPremium,
+      isPremium: Boolean(req.isPremium),
       nomeExibicao,
       bio: perfil?.bio || '',
       fotoUrl,

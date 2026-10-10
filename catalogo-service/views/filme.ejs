@@ -12,6 +12,14 @@
     <div class="nav-links">
       <a href="/filmes">Catálogo</a>
       <a href="/favoritos">Meus Favoritos</a>
+      <a href="/perfil/<%= user.userId || user.id %>">Meu Perfil</a>
+      <% if (user.is_premium) { %>
+        <span class="user-badge" style="border-color: rgba(245, 158, 11, 0.5); background: rgba(245, 158, 11, 0.15); color: var(--primary); font-weight: 700;">
+          ⭐ Premium
+        </span>
+      <% } else { %>
+        <a href="/premium" style="color: var(--primary); font-weight: 600;">⭐ Seja Premium</a>
+      <% } %>
       <% if (user.role === 'admin') { %>
         <a href="/admin/usuarios">⚙️ Admin</a>
       <% } %>
@@ -74,6 +82,11 @@
             <div class="comment-header">
               <span class="comment-author">
                 <%= c.autor_nome || 'Usuário removido' %>
+                <% if (c.autor_is_premium) { %>
+                  <span style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: var(--primary); font-size: 0.72rem; padding: 2px 7px; border-radius: 999px; font-weight: 700; margin-left: 0.35rem; display: inline-flex; align-items: center; gap: 0.2rem;">
+                    ⭐ Premium
+                  </span>
+                <% } %>
                 <% if (c.usuario_id === userId) { %>
                   <span style="color: var(--primary); font-size: 0.8rem;">(você)</span>
                 <% } %>

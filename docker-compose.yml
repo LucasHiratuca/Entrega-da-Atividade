@@ -17,6 +17,10 @@ services:
       - S3_SECRET_KEY=f46bb999a2d2615ad200369932ccff5454f113c74c4614e6027dc2380dcc5632
       - S3_BUCKET=perfis
       - S3_REGION=garage
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - STRIPE_PRICE_ID=${STRIPE_PRICE_ID:-}
     networks:
       - app_network
     depends_on:

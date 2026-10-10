@@ -141,6 +141,13 @@
       <a href="/filmes">Catálogo</a>
       <a href="/favoritos">Meus Favoritos</a>
       <a href="/perfil/<%= user.userId || user.id %>" style="color: var(--primary);">Meu Perfil</a>
+      <% if (user.is_premium) { %>
+        <span class="user-badge" style="border-color: rgba(245, 158, 11, 0.5); background: rgba(245, 158, 11, 0.15); color: var(--primary); font-weight: 700;">
+          ⭐ Premium
+        </span>
+      <% } else { %>
+        <a href="/premium" style="color: var(--primary); font-weight: 600;">⭐ Seja Premium</a>
+      <% } %>
       <% if (user.role === 'admin') { %>
         <a href="/admin/usuarios">⚙️ Admin</a>
       <% } %>
@@ -170,11 +177,29 @@
         <% } %>
       </div>
       <div class="profile-info">
-        <div class="profile-name"><%= nomeExibicao %></div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+          <div class="profile-name" style="margin-bottom: 0;"><%= nomeExibicao %></div>
+          <% if (typeof perfilIsPremium !== 'undefined' && perfilIsPremium) { %>
+            <span style="background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.3)); border: 1px solid rgba(245,158,11,0.5); color: var(--primary); padding: 0.25rem 0.65rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem;">
+              ⭐ Assinante Premium
+            </span>
+          <% } else { %>
+            <span style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); padding: 0.25rem 0.65rem; border-radius: 999px; font-size: 0.8rem; font-weight: 500;">
+              Plano Padrão (Gratuito)
+            </span>
+          <% } %>
+        </div>
         <p class="profile-bio"><%= bio || 'Sem bio ainda.' %></p>
-        <% if (ehDono) { %>
-          <a class="btn-edit-perfil" href="/perfil/<%= perfilUsuarioId %>/editar">✏️ Editar Perfil</a>
-        <% } %>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <% if (ehDono) { %>
+            <a class="btn-edit-perfil" href="/perfil/<%= perfilUsuarioId %>/editar">✏️ Editar Perfil</a>
+          <% } %>
+          <% if (ehDono && (typeof perfilIsPremium === 'undefined' || !perfilIsPremium)) { %>
+            <a class="btn-edit-perfil" href="/premium" style="background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: var(--primary);">
+              ⭐ Fazer Upgrade para Premium
+            </a>
+          <% } %>
+        </div>
       </div>
     </div>
 

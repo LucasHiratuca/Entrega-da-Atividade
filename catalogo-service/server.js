@@ -14,6 +14,7 @@ const favoriteRoutes = require('./routes/favorites');
 const commentRoutes = require('./routes/comments');
 const adminRoutes = require('./routes/admin');
 const perfilRoutes = require('./routes/perfil');
+const { router: premiumRoutes, webhookHandler } = require('./routes/premium');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +22,10 @@ const PORT = process.env.PORT || 3000;
 // View engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+// WEBHOOK DO STRIPE (Atividade 7):
+// Deve receber o corpo em formato RAW (Buffer) ANTES do express.json() para validar a assinatura criptográfica
+app.post('/webhook/stripe', express.raw({ type: 'application/json' }), webhookHandler);
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
@@ -53,6 +58,7 @@ app.use('/', favoriteRoutes);
 app.use('/', commentRoutes);
 app.use('/', adminRoutes);
 app.use('/', perfilRoutes);
+app.use('/', premiumRoutes);
 
 // Rota raiz
 app.get('/', (req, res) => {
