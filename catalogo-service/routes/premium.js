@@ -63,7 +63,11 @@ router.post('/premium/checkout', requireLogin, async (req, res) => {
       return res.redirect('/premium');
     }
 
-    const publicUrl = process.env.CATALOG_PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
+    const host = req.get('host') || 'localhost:8217';
+    const proto = req.headers['x-forwarded-proto'] || req.protocol;
+    const publicUrl = host.includes('lapps.studio')
+      ? `https://${host}`
+      : (process.env.CATALOG_PUBLIC_URL || `${proto}://${host}`);
 
     // Configuração da sessão do Stripe Checkout
     const sessionConfig = {
