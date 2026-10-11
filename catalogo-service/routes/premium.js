@@ -71,7 +71,6 @@ router.post('/premium/checkout', requireLogin, async (req, res) => {
 
     // Configuração da sessão do Stripe Checkout
     const sessionConfig = {
-      payment_method_types: ['card'],
       mode: 'subscription',
       client_reference_id: String(req.userId),
       customer_email: req.session.user?.email || undefined,
