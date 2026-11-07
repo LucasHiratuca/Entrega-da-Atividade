@@ -1,3 +1,6 @@
+> 🚀 **Este projeto continua em https://github.com/LucasHiratuca/slotmatrix**
+> *(Transição da P1 para o SaaS B2B — Atividade 9 em diante)*
+
 # 🎬 Catálogo Tom Hanks — ISW055
 
 Projeto da disciplina **ISW055 — Computação em Nuvem**, orientado pelo professor [@siriani](https://github.com/siriani).
