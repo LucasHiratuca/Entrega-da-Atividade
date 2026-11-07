@@ -1,14 +1,16 @@
 # 🎬 Catálogo Tom Hanks — ISW055
 
-Projeto da disciplina **ISW055**, orientado pelo professor [@siriani](https://github.com/siriani).
+Projeto da disciplina **ISW055 — Computação em Nuvem**, orientado pelo professor [@siriani](https://github.com/siriani).
 
-Aplicação web que exibe a filmografia de Tom Hanks consumindo a [API do TMDB](https://www.themoviedb.org/), permitindo favoritar filmes, realizar comentários com moderação, auditoria via Redis e perfil com upload de fotos no **Garage S3**.
+Aplicação web que exibe a filmografia de Tom Hanks consumindo a [API do TMDB](https://www.themoviedb.org/), permitindo favoritar filmes, realizar comentários com moderação, auditoria via Redis Streams, perfil com upload de fotos no **Garage S3** e assinatura **Premium com Stripe**.
+
+> 📚 **Documentação Reversa Completa:** Consulte o arquivo [`DOCUMENTACAO.md`](./DOCUMENTACAO.md) para a especificação funcional de ponta a ponta, diagrama arquitetural ("big picture"), lista formal de regras de negócio (*"Se X, então Y"*) e modelo de dados (DER).
 
 ---
 
-## 📅 Escopo e Registro de Entregas da P1
+## 📅 Escopo e Registro de Entregas da Disciplina
 
-> **Status:** Todas as atividades previstas no cronograma até 07/10 foram concluídas com comprovação em histórico de commits no Git.
+> **Status:** Todas as 8 atividades do cronograma foram 100% concluídas com código funcional, testes e comprovação em histórico de commits no Git.
 
 | Nº | Atividade | Data Planejada | Data Realizada | Repositório / Prova no Git | Evidência / Status |
 |:---:|---|:---:|:---:|---|---|
@@ -18,13 +20,36 @@ Aplicação web que exibe a filmografia de Tom Hanks consumindo a [API do TMDB](
 | **4** | **Controle de acesso por papel — RBAC** | 04/09/2026 | **01/09/2026** | Commits [`6636f4d`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/6636f4d) e [`a8e31ef`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/a8e31ef) | Enforcement 403, moderação e painel admin |
 | **5** | **Logs e auditoria** | 25/09/2026 | **08/09/2026** *(Prints: 15/09)* | Commits [`e6c6682`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/e6c6682) e [`8bc9faa`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/8bc9faa) | Microsserviço `log-service` com Redis Streams |
 | **6** | **Upload e perfil de usuário** | 02/10/2026 | **26/09/2026** | Commits [`27856a8`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/27856a8) e [`8ca3fb6`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/8ca3fb6) | Object storage com **Garage S3**, streaming e auditoria OWASP |
-| **7** | **Plano Premium com Stripe** | 09/10/2026 | **10/10/2026** | Continuação no repositório | Stripe Checkout, Webhooks assinados e Favoritos Ilimitados |
+| **7** | **Plano Premium com Stripe** | 09/10/2026 | **10/10/2026** | Commits [`db428bf`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/db428bf) e [`3e95dd0`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/3e95dd0) | Stripe Checkout, Webhooks assinados e Favoritos Ilimitados |
+| **8** | **Encerramento — SaaS, PaaS, IaaS & Docs** | 16/10/2026 | **16/10/2026** | [`DOCUMENTACAO.md`](./DOCUMENTACAO.md) | Classificação das 3 camadas de nuvem, especificação reversa e DER |
+
+---
+
+## ☁️ Classificação SaaS, PaaS e IaaS do Projeto (Atividade 8)
+
+As três siglas descrevem quanto da pilha de infraestrutura é gerenciada pela equipe de desenvolvimento *versus* quanto é gerenciado por provedores terceiros:
+
+* **IaaS (Infrastructure as a Service):** Você gerencia o sistema operacional para cima. O provedor entrega apenas máquina virtual, disco e rede. Você instala o SO, Docker, kernel patches e firewall. Mais controle e maior responsabilidade.
+* **PaaS (Platform as a Service):** Você entrega apenas a imagem ou o código da aplicação. O provedor cuida do SO subjacente, runtime, orquestração e isolamento de processos. Menos preocupação com infraestrutura básica, maior foco em negócio e velocidade.
+* **SaaS (Software as a Service):** Você apenas consome o produto pronto via API ou dashboard. Nenhuma infraestrutura sua está envolvida na execução daquela funcionalidade.
+
+O ecossistema do **Catálogo Tom Hanks** atravessa propositalmente as três camadas ao mesmo tempo:
+
+| Componente do Sistema | Camada de Nuvem | Justificativa Técnica e Teórica |
+|---|:---:|---|
+| **VM Proxmox / Ubuntu Server na Fatec** | **IaaS** | A Fatec/Proxmox entrega exclusivamente a infraestrutura de hardware virtualizado (vCPU, RAM, disco e rede). A equipe administra o sistema operacional Ubuntu, aplica atualizações de kernel, gerencia firewall e provisiona o Docker Engine manualmente. |
+| **Containers da Aplicação (`catalogo-service`, `auth-service`, `log-service`)** | **PaaS** | A equipe entrega somente o código da aplicação empacotado em imagens Docker. O runtime Node.js, isolamento de processos, ciclo de vida dos containers e roteamento de rede interna (`app_network`) são abstraídos e geridos pela plataforma Docker/Portainer. |
+| **Object Storage (`garage_s3`) e Cache (`redis_audit`)** | **PaaS** | Motores de armazenamento S3 e mensageria em memória operando como serviços conteinerizados gerenciados pela plataforma local, sem a necessidade de provisionar servidores físicos dedicados. |
+| **Banco Relacional MariaDB (GCP Cloud SQL)** | **PaaS** | Instância consumida como plataforma de banco de dados gerenciado em nuvem (`DB_HOST`). Backups físicos, replicação e manutenção da integridade do engine são geridos pelo provedor cloud. |
+| **Stripe (Checkout & Assinaturas)** | **SaaS** | Provedor de pagamento pronto consumido 100% via API e Webhooks. Nenhuma infraestrutura de cartões reside no projeto, delegando integralmente a conformidade PCI-DSS Nível 1 ao Stripe. |
+| **Mailtrap / Provedor SMTP** | **SaaS** | Solução de entrega e inspeção de e-mails transacionais de recuperação de senha consumida via protocolo pronto, eliminando a necessidade de hospedar servidores SMTP (Postfix), chaves DKIM e reputação de IP. |
+| **The Movie Database (TMDB API)** | **SaaS** | Serviço pronto consumido via REST API para alimentação dinâmica de sinopses, elenco e cartazes cinematográficos sem armazenamento próprio do acervo de filmes. |
 
 ---
 
 ## 🏗️ Arquitetura Geral da Aplicação
 
-O projeto evoluiu de uma aplicação inicial (Atividade 2) para uma **arquitetura de microsserviços desacoplados e distribuídos**:
+O projeto opera sob uma **arquitetura de microsserviços desacoplados e distribuídos** em rede interna isolada:
 
 ```text
 Navegador do Usuário
@@ -68,7 +93,7 @@ Navegador do Usuário
 ### Atividade 4 — Controle de Acesso Baseado em Papel (RBAC)
 * **Data Planejada:** 04/09/2026 | **Data Realizada:** 01/09/2026
 * **Commits:** [`6636f4d`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/6636f4d) e [`a8e31ef`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/a8e31ef)
-* Adoção do **Padrão B (claims no JWT)** para verificação instantânea no servidor:
+* Adoção de claims no JWT para verificação instantânea no servidor:
   * Usuário comum: catálogo, favoritos e comentários próprios.
   * Administrador: moderação de comentários de terceiros e painel `/admin/usuarios` para alterar papéis de acesso.
   * Enforcement 100% no backend retornando **HTTP 403 Forbidden**.
@@ -81,48 +106,27 @@ Navegador do Usuário
 ### Atividade 6 — Perfil de Usuário & Object Storage com Garage S3
 * **Data Planejada:** 02/10/2026 | **Data Realizada:** 26/09/2026
 * **Commits:** [`27856a8`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/27856a8) e [`8ca3fb6`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/8ca3fb6)
-
-#### Por que a imagem não mora no banco de dados?
-Armazenar binários (`BLOB`) no MariaDB sobrecarrega memória e infla backups (`mysqldump`). O padrão arquitetural adotado: **o arquivo binário vai para o Garage S3 e o banco guarda somente a referência (`foto_key`)**.
-
-#### Por que Garage S3?
-O **Garage S3** (`dxflrs/garage:v1.0.1`) é um engine moderno, distribuído e ultraleve escrito em **Rust**, 100% compatível com a API S3 (AWS Signature V4) e com persistência em SQLite local.
-
-#### Trade-offs de Exibição da Imagem (Decisão Arquitetural)
-Para exibir a foto de volta no perfil do usuário, foram avaliadas três abordagens principais:
-
-| Abordagem | Vantagens | Desvantagens | Veredito |
-|---|---|---|---|
-| **1. Bucket com Leitura Pública** | • Implementação trivial (tag `<img src="http://storage/bucket/foto.jpg">`)<br>• Sem processamento no servidor Node.js | • Imagens e fotos de perfil ficam 100% expostas sem qualquer autenticação<br>• Exige expor a porta do object storage para a internet pública<br>• Permite enumeração e scraping de fotos de todos os usuários | ❌ **Descartado:** Violação do princípio do menor privilégio e risco de exposição de dados. |
-| **2. URL Pré-assinada / Temporária** | • Acesso temporário com expiração (ex: 1 hora)<br>• O storage atende as requisições diretamente sem sobrecarregar o Node.js | • Em ambientes conteinerizados ou atrás de reverse proxy (Cloudflare/Portainer), o storage gera links com seu hostname interno (`minio:9000` ou `garage:3900`), que **não resolvem no navegador do usuário**<br>• Exigiria configurar DNS público ou hairpinning para o endpoint do storage | ⚠️ **Analisado:** Válido para nuvens públicas nativas (AWS S3), mas problemático em ambientes Docker/laboratório com proxy reverso. |
-| **3. Streaming Seguro via Backend (`/perfil/:userId/foto`)** | • **Zero portas do storage expostas:** o Garage S3 fica 100% isolado na rede interna do Docker (`app_network`)<br>• Funciona perfeitamente em qualquer ambiente (localhost, Docker interno, Portainer, túnel Cloudflare)<br>• Cabeçalhos de cache otimizados (`Cache-Control: public, max-age=3600`)<br>• Permite validação de permissão antes de entregar qualquer byte | ✅ **ADOTADO:** A rota `GET /perfil/:userId/foto` recupera o stream do Garage S3 via API S3 interna e repassa ao cliente com `Content-Type` validado. Máxima segurança e portabilidade. |
-
-#### Controle de Acesso e Segurança (OWASP Top 10)
-* O backend confere a identidade autenticada (`req.userId`);
-* Tentativas de editar perfis alheios são barradas com **HTTP 403 Forbidden** antes de qualquer operação no banco ou no storage;
-* Relatório completo e suíte de testes em [`SECURITY_AUDIT.md`](./SECURITY_AUDIT.md).
+* Object storage com **Garage S3** (`dxflrs/garage:v1.0.1`) em Rust:
+  * Streaming seguro via backend (`/perfil/:userId/foto`): zero portas do storage expostas para a internet.
+  * O MariaDB armazena apenas a referência (`foto_key`), mantendo o banco leve e otimizado.
+  * Relatório de segurança OWASP disponível em [`SECURITY_AUDIT.md`](./SECURITY_AUDIT.md).
 
 ### Atividade 7 — Serviço Baseado em Pagamento: Plano Premium com Stripe
 * **Data Planejada:** 09/10/2026 | **Data Realizada:** 10/10/2026
+* **Commits:** [`db428bf`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/db428bf) e [`3e95dd0`](https://github.com/LucasHiratuca/Entrega-da-Atividade/commit/3e95dd0)
 * **Orientador:** [@siriani](https://github.com/siriani)
+* O formulário de pagamento é 100% hospedado pelo próprio Stripe (`Stripe Checkout`). O backend valida a assinatura recebida no header `stripe-signature` via webhook assíncrono (`POST /webhook/stripe`).
+* **Benefícios Reais:** Favoritos ilimitados para assinantes Premium (com limite restrito de 15 para contas gratuitas), selo `⭐ Assinante Premium` no perfil, na navbar e destaque em comentários.
 
-#### Por que Pagamento é um Serviço à Parte?
-Processar dados de cartão de crédito internamente exige conformidade rigorosa com normas internacionais de segurança (**PCI-DSS Nível 1**). A arquitetura padrão de mercado adotada neste projeto delega essa responsabilidade integralmente para um provedor especializado (**Stripe**).
-
-O sistema **nunca vê, recebe ou armazena números de cartão, datas de validade ou códigos CVV**. O formulário de pagamento é 100% hospedado pelo próprio Stripe (`Stripe Checkout`). Nosso banco de dados guarda exclusivamente o identificador do cliente (`stripe_customer_id`), da assinatura (`stripe_subscription_id`) e a flag `is_premium`.
-
-#### Fluxo de Checkout e Webhook Assíncrono
-1. **Início do Checkout:** O usuário autenticado clica em assinar (`POST /premium/checkout`);
-2. **Criação da Sessão:** O `catalogo-service` cria uma `Checkout Session` na API do Stripe e redireciona o usuário (HTTP 303) para a página segura de pagamento do Stripe;
-3. **Pagamento em Modo de Teste:** O usuário preenche os dados utilizando cartões de teste oficiais do Stripe (`4242 4242...`);
-4. **Webhook Assíncrono (`POST /webhook/stripe`):** O Stripe envia uma chamada HTTP assíncrona notificando o evento `checkout.session.completed`;
-5. **Validação Criptográfica de Assinatura:** O backend valida a assinatura recebida no header `stripe-signature` utilizando o segredo do webhook (`STRIPE_WEBHOOK_SECRET`) e o corpo em formato RAW (Buffer);
-6. **Ativação no Banco de Dados:** O usuário é promovido a `is_premium = TRUE` no MariaDB, disparando log de auditoria no `log-service`.
-
-#### Benefícios Reais e Verificáveis do Usuário Premium
-* **⭐ Favoritos Ilimitados:** Usuários gratuitos são bloqueados ao atingir o limite de 15 favoritos (`LIMITE_FAVORITOS_USUARIO = 15`), enquanto usuários Premium e Administradores possuem capacidade ilimitada;
-* **🎖️ Selo Exclusivo de Assinante:** Distintivo dourado no perfil público (`/perfil/:userId`) e indicador na barra de navegação;
-* **💬 Destaque em Comentários:** Identificação visual especial com badge `⭐ Premium` em todos os comentários publicados na filmografia.
+### Atividade 8 — Encerramento do Projeto: SaaS, PaaS, IaaS e Documentação Reversa
+* **Data Planejada:** 16/10/2026 | **Data Realizada:** 16/10/2026
+* **Orientador:** [@siriani](https://github.com/siriani)
+* Documentação de engenharia reversa completa consolidada no arquivo dedicado [`DOCUMENTACAO.md`](./DOCUMENTACAO.md):
+  * **Especificação Funcional:** Descrição completa de todos os fluxos e casos de uso do sistema legado.
+  * **Arquitetura Geral:** Diagrama visual Mermaid conectando os 5 serviços e provedores externos.
+  * **Regras de Negócio:** Extração formal de 25 regras no padrão estrito *"Se X, então Y"*.
+  * **Modelo de Dados (DER):** Diagrama entidade-relacionamento das tabelas MariaDB, Garage S3 e Redis Streams.
+  * **Mapeamento em Camadas de Nuvem:** Classificação teórica e prática de cada componente nas camadas IaaS, PaaS e SaaS.
 
 ---
 
@@ -155,9 +159,9 @@ powershell -ExecutionPolicy Bypass -File .\init-garage.ps1
 ```
 
 Acesse no navegador:
-* **Aplicação:** `http://localhost:8217`
+* **Aplicação Principal:** `http://localhost:8217`
 * **Página do Plano Premium:** `http://localhost:8217/premium`
-* **Garage S3 (API):** `http://localhost:3900`
+* **Garage S3 (API Interna):** `http://localhost:3900`
 
 ---
 
@@ -170,7 +174,7 @@ docker exec catalogo_service node owasp-security-suite.js
 
 ---
 
-## 📋 Checklist Geral de Entregas (P1 e Atividades)
+## 📋 Checklist Geral de Entregas (P1 e Atividades Finais)
 
 - [x] **Atividade 1:** Agenda telefônica em Flask (`LucasHiratuca/aula_01_cloud`)
 - [x] **Atividade 2:** Catálogo de filmes do Tom Hanks com favoritos
@@ -179,5 +183,5 @@ docker exec catalogo_service node owasp-security-suite.js
 - [x] **Atividade 5:** Logs e auditoria com Redis Streams
 - [x] **Atividade 6:** Upload de foto e perfil com Garage S3 e streaming seguro
 - [x] **Atividade 7:** Plano Premium com Stripe Checkout, Webhooks assinados e Favoritos Ilimitados
+- [x] **Atividade 8:** Documentação reversa completa em [`DOCUMENTACAO.md`](./DOCUMENTACAO.md) e classificação SaaS/PaaS/IaaS no `README.md`
 - [x] Menção ao orientador [@siriani](https://github.com/siriani) mantida
-
